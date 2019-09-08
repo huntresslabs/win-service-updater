@@ -1,6 +1,8 @@
 package updater
 
 import (
+	"crypto"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/xml"
@@ -44,4 +46,13 @@ func ParsePublicKey(s string) (RSAKey, error) {
 	key.Exponent = int(e)
 
 	return key, nil
+}
+
+func VerifyUpdate(pub *rsa.PublicKey, hashed []byte, sig []byte) error {
+	// func VerifyPKCS1v15(pub *PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error
+	err := rsa.VerifyPKCS1v15(pub, crypto.SHA1, hashed[:], sig)
+	if err != nil {
+		return err
+	}
+	return nil
 }

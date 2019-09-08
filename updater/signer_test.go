@@ -1,8 +1,10 @@
 package updater
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -30,4 +32,25 @@ func TestSigner(t *testing.T) {
 	assert.Equal(t, b64Mod, key.ModulusString)
 	assert.Equal(t, privKey.PublicKey.N, key.Modulus)
 	assert.Equal(t, privKey.PublicKey.E, key.Exponent)
+}
+
+func TestSigner_VerifyUpdate(t *testing.T) {
+	rng := rand.Reader
+	privKey, e := rsa.GenerateKey(rng, 2048)
+	assert.Nil(t, e)
+
+	message := []byte("message to be signed")
+
+	hashed := sha1.Sum(message)
+
+	signature, err := rsa.SignPKCS1v15(rng, privKey, crypto.SHA1, hashed[:])
+	assert.Nil(t, err)
+
+	err = VerifyUpdate(&privKey.PublicKey, hashed[:], signature)
+	assert.Nil(t, err)
+
+	privKey2, e := rsa.GenerateKey(rng, 2048)
+	assert.Nil(t, e)
+	err = VerifyUpdate(&privKey2.PublicKey, hashed[:], signature)
+	assert.NotNil(t, err)
 }
