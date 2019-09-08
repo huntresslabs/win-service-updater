@@ -1,7 +1,6 @@
 package updater
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -30,7 +29,6 @@ func ParseArgs(argsSlice []string) Args {
 	var args Args
 	for _, arg := range argsSlice {
 		larg := strings.ToLower(arg)
-		fmt.Println(larg)
 
 		switch {
 		case larg == "/quickcheck":
