@@ -22,9 +22,11 @@ Todo:
   - compare current version with available version
   - return code 2 means update is avaiable
 - download and extract update to temp folder
-- stop services specified in udt (update details)
+  - `wyupdateArgs := fmt.Sprintf("/fromservice -logfile=\"%s\" -urlargs=%s", WYUPDATE_LOG, AUTH)`
+- verify signature of update (functions written)
+- stop services specified in udt (update details) (functions written)
 - apply update
 - rollback updade
-- start services specified in udt (update details)
+- start services specified in udt (update details) (functions written)
 - update client.wyc with new version number
 
