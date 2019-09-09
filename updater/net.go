@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"

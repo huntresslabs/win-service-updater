@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"testing"
 
-	"src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSigner(t *testing.T) {

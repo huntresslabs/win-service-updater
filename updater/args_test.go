@@ -3,7 +3,7 @@ package updater
 import (
 	"testing"
 
-	"src/github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestArgs(t *testing.T) {
