@@ -1,3 +1,8 @@
+// Parser for wys files
+// File ID: IUSDFV2
+// Compressed File ID: = { 0x50, 0x4b, 0x03, 0x04 } = { 'P', 'K', 0x03, 0x04 }
+// File Extension: wys
+
 package updater
 
 import (
@@ -5,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
@@ -120,7 +126,7 @@ func ReadWysTLV(r io.Reader) *TLV {
 	return &record
 }
 
-func ParseWys(path string) ConfigWYS {
+func ParseWys(path string, args Args) ConfigWYS {
 	f, err := os.Open(path)
 	if nil != err {
 		log.Fatal(err)
@@ -159,6 +165,7 @@ func ParseWys(path string) ConfigWYS {
 			wys.UpdateErrorText = ValueToString(tlv)
 		case DSTRING_WYS_UPDATE_FILE_SITE:
 			wys.UpdateFileSite = ValueToString(tlv)
+			wys.UpdateFileSite = strings.Replace(wys.UpdateFileSite, "%urlargs%", args.Urlargs, 1)
 		case DSTRING_WYS_VERSION_TO_UPDATE:
 			wys.VersionToUpdate = ValueToString(tlv)
 		case INT_WYS_DUMMY_VAR_LEN:

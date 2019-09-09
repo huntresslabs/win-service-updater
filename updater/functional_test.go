@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,17 +33,15 @@ func TestFunctional(t *testing.T) {
 	argv := []string{"-urlargs=12345:67890"}
 	args := ParseArgs(argv)
 
-	wys := ParseWys("../test_files/wys_uncompressed.bin")
-	uri := strings.Replace(wys.UpdateFileSite, "%urlargs%", args.Urlargs, 1)
+	wys := ParseWys("../test_files/wys_uncompressed.bin", args)
 
 	// add the port from the test server url to the url in the wys config
-	u, err := url.ParseRequestURI(uri)
+	u, err := url.ParseRequestURI(wys.UpdateFileSite)
 	assert.Nil(t, err)
 	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
 	turi := u.String()
 
 	dir, err := ioutil.TempDir("", "prefix")
-	fmt.Println(dir)
 	if err != nil {
 		log.Fatal(err)
 	}

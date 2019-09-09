@@ -1,3 +1,7 @@
+// Parser for updtdetails.udt (update details)
+// File ID: IUUDFV2
+// Filename: updtdetails.udt
+
 package updater
 
 import (
