@@ -223,7 +223,7 @@ if __name__ == '__main__':
         'WYS_VERSION_TO_UPDATE_DSTRING': '1.0.0.2',
         'WYS_UPDATE_FILE_SITE_DSTRING': 'https://127.0.0.1/updates/update.wyu?auth=%urlargs%',
         #'WYS_UPDATE_FILE_SITE_DSTRING': 'http://192.168.1.20:8080/%s' % UPDATE_ARCHIVE,
-        'WYS_UPDATE_FILE_SIZE_LONG': 6503371
+        'WYS_UPDATE_FILE_SIZE_LONG': 6503371,
         'WYS_UPDATE_FILE_ADLER32_CHECKSUM_LONG': 3388085357,
     }
 
