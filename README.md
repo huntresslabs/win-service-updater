@@ -26,7 +26,7 @@ Partial implementation of wyUpdate functionality. This updater is written in GoL
 ## Operation
 
 - To check if an update is available:
-  - Download the .wys file
+  - Download the .wys file (update URL specified in client.wyc)
   - Compare the available update (speficied in the .wys file) with the version currently installed
 - If an update is required:
   - Download the .wyu file (specified in the .wys file)
