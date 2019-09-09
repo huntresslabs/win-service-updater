@@ -18,6 +18,7 @@ func DownloadFile(url string, localpath string) error {
 	defer out.Close()
 
 	// Get the data
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: TRUE_IF_GO_TEST}
 	resp, err := http.Get(url)
 	if nil != err {
 		return err
