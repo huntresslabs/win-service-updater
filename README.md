@@ -11,7 +11,20 @@ Arguments supported:
 - "/quickcheck"
 - "/justcheck"
 - "/noerr",
-- "-urlargs=<args>"
-- "/outputinfo=<out>"
+- "-urlargs=_args_"
+- "/outputinfo=_out_"
 - "/fromservice"
-- "-logfile=<log>"
+- "-logfile=_log_"
+
+Todo:
+- check it update is available
+  - `rc, _ := try(WYUPDATE_EXE, "/quickcheck", "/justcheck", "/noerr", fmt.Sprintf("-urlargs=%s", AUTH), fmt.Sprintf("/outputinfo=%s", CHECK_LOG))`
+  - compare current version with available version
+  - return code 2 means update is avaiable
+- download and extract update to temp folder
+- stop services specified in udt (update details)
+- apply update
+- rollback updade
+- start services specified in udt (update details)
+- update client.wyc with new version number
+
