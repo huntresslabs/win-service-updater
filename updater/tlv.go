@@ -8,6 +8,7 @@ import (
 
 type TLV struct {
 	Tag        uint8
+	TagString  string
 	DataLength uint32
 	Length     uint32
 	Value      []byte
