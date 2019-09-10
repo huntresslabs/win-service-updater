@@ -1,9 +1,7 @@
 package updater
 
 import (
-	"bytes"
 	"encoding/binary"
-	"fmt"
 )
 
 type TLV struct {
@@ -14,64 +12,44 @@ type TLV struct {
 	Value      []byte
 }
 
-func displayTagString(tlv *TLV) {
-	fmt.Println("[+] String record:", string(tlv.Value))
+// wyUpdate types
+// int – 32‐bit, little‐endian, signed integer
+// long – 64‐bit, little‐endian, signed integer
+
+// d. string
+// Int that stores String Length ‘N’ + 4,
+// Int that stores String Length ‘N’,
+// UTF8 string N bytes long
+
+// string
+// Int that stores String Length ‘N’,
+// UTF8 string N bytes long
+
+func ValueToInt(tlv *TLV) int {
+	return int(binary.LittleEndian.Uint32(tlv.Value))
 }
 
-// func displayTagUint16(tlv *TLV) {
-// 	buf := bytes.NewBuffer(tlv.Value)
-// 	var value uint16
+func ValueToLong(tlv *TLV) int64 {
+	return int64(binary.LittleEndian.Uint64(tlv.Value))
+}
 
-// 	err := binary.Read(buf, binary.BigEndian, &value)
-// 	if err != nil {
-// 		fmt.Println("[!] Invalid record:", err.Error())
-// 	} else {
-// 		fmt.Println("[+] Uint16 record:", value)
-// 	}
+func ValueToByteSlice(tlv *TLV) []byte {
+	return tlv.Value
+}
+
+func ValueToString(tlv *TLV) string {
+	return string(tlv.Value)
+}
+
+// type TLVer interface {
+// 	String() string
+// 	Int() int
 // }
 
-func displayTagUint32(tlv *TLV) {
-	buf := bytes.NewBuffer(tlv.Value)
-	var value uint32
+// func (tlv *TLV) Int() int {
+// 	return int(binary.LittleEndian.Uint32(tlv.Value))
+// }
 
-	err := binary.Read(buf, binary.LittleEndian, &value)
-	if err != nil {
-		fmt.Println("[!] Invalid record:", err.Error())
-	} else {
-		fmt.Println("[+] Uint32 record:", value)
-	}
-}
-
-// func displayTLV(tlv *TLV) {
-// 	fmt.Printf("[+] tag %s (%x)\n", tags[tlv.Tag], tlv.Tag)
-// 	switch tlv.Tag {
-// 	case DSTRING_IUC_COMPANY_NAME,
-// 		DSTRING_IUC_PRODUCT_NAME,
-// 		DSTRING_IUC_INSTALLED_VERSION,
-// 		DSTRING_IUC_SERVER_FILE_SITE,
-// 		DSTRING_IUC_WYUPDATE_SERVER_SITE,
-// 		DSTRING_IUC_HEADER_IMAGE_ALIGNMENT,
-// 		DSTRING_IUC_HEADER_TEXT_COLOR,
-// 		DSTRING_IUC_HEADER_FILENAME,
-// 		DSTRING_IUC_SIDE_IMAGE_FILENAME,
-// 		DSTRING_IUC_LANGUAGE_CULTURE,
-// 		DSTRING_IUC_LANGUAGE_FILENAME:
-// 		displayTagString(tlv)
-// 	case INT_IUC_HEADER_TEXT_INDENT,
-// 		BOOL_IUC_HIDE_HEADER_DIVIDER,
-// 		BOOL_IUC_CLOSE_WYUPDATE,
-// 		INT_UDT_NUMBER_OF_FILE_INFOS,
-// 		INT_UDT_NUMBER_OF_REGISTRY_CHANGES:
-// 		displayTagUint32(tlv)
-// 	case STRING_IUC_CUSTOM_TITLE_BAR,
-// 		STRING_IUC_PUBLIC_KEY,
-// 		STRING_IUC_GUID,
-// 		STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE,
-// 		STRING_UDT_SERVICE_TO_START_AFTER_UPDATE:
-// 		displayTagString(tlv)
-// 	case END_IUC:
-// 		return
-// 	default:
-// 		fmt.Println("[!] unknown tag", tlv.Tag)
-// 	}
+// func (tlv *TLV) String() string {
+// 	return string(tlv.Value)
 // }
