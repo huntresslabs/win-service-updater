@@ -65,7 +65,8 @@ func TestFunctional(t *testing.T) {
 	argv := []string{"-urlargs=12345:67890"}
 	args := ParseArgs(argv)
 
-	wys := ParseWys("../test_files/wys_uncompressed.bin", args)
+	wys, err := ParseWys("../test_files/compressed.wys", args)
+	assert.Nil(t, err)
 
 	// add the port from the test server url to the url in the wys config
 	u, err := url.ParseRequestURI(wys.UpdateFileSite)

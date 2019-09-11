@@ -6,10 +6,10 @@
 package updater
 
 import (
+	"archive/zip"
 	"encoding/binary"
+	"fmt"
 	"io"
-	"log"
-	"os"
 	"strings"
 )
 
@@ -126,57 +126,73 @@ func ReadWysTLV(r io.Reader) *TLV {
 	return &record
 }
 
-func ParseWys(path string, args Args) ConfigWYS {
-	f, err := os.Open(path)
-	if nil != err {
-		log.Fatal(err)
+func ParseWys(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
+	zipr, err := zip.OpenReader(compressedWysFile)
+	if err != nil {
+		return wys, err
 	}
-	defer f.Close()
+	defer zipr.Close()
 
-	// read HEADER
-	b := make([]byte, 7)
-	f.Read(b)
-	// fmt.Printf("[+] HEADER %s\n", b)
+	for _, f := range zipr.File {
+		// there is only one file in the archive
+		// "0" is the name of the uncompressed wys file
+		if f.FileHeader.Name == "0" {
+			fh, err := f.Open()
+			if err != nil {
+				return wys, err
+			}
+			defer fh.Close()
 
-	var wys ConfigWYS
+			// read HEADER
+			b := make([]byte, 7)
+			fh.Read(b)
+			// fmt.Printf("[+] HEADER %s\n", b)
 
-	for {
-		tlv := ReadWysTLV(f)
-		if tlv == nil {
-			break
-		}
+			for {
+				tlv := ReadWysTLV(fh)
+				if tlv == nil {
+					break
+				}
 
-		switch tlv.Tag {
-		case BYTE_WYS_FILE_SHA1:
-			wys.FileSha1 = ValueToByteSlice(tlv)
-		case BYTE_WYS_RTF:
-			wys.RTF = ValueToByteSlice(tlv)
-		case DSTRING_WYS_CURRENT_LAST_VERSION:
-			wys.CurrentLastVersion = ValueToString(tlv)
-		case DSTRING_WYS_LATEST_CHANGES:
-			wys.LatestChanges = ValueToString(tlv)
-		case DSTRING_WYS_MIN_CLIENT_VERSION:
-			wys.MinClientVersion = ValueToString(tlv)
-		case DSTRING_WYS_SERVER_FILE_SITE:
-			wys.ServerFileSite = ValueToString(tlv)
-		case DSTRING_WYS_UPDATE_ERROR_LINK:
-			wys.UpdateErrorLink = ValueToString(tlv)
-		case DSTRING_WYS_UPDATE_ERROR_TEXT:
-			wys.UpdateErrorText = ValueToString(tlv)
-		case DSTRING_WYS_UPDATE_FILE_SITE:
-			wys.UpdateFileSite = ValueToString(tlv)
-			wys.UpdateFileSite = strings.Replace(wys.UpdateFileSite, "%urlargs%", args.Urlargs, 1)
-		case DSTRING_WYS_VERSION_TO_UPDATE:
-			wys.VersionToUpdate = ValueToString(tlv)
-		case INT_WYS_DUMMY_VAR_LEN:
-			// do nothing
-		case INT_WYS_FOLDER:
-			wys.WysFolder = ValueToInt(tlv)
-		case LONG_WYS_UPDATE_FILE_ADLER32_CHECKSUM:
-			wys.UpdateFileAdler32 = ValueToLong(tlv)
-		case LONG_WYS_UPDATE_FILE_SIZE:
-			wys.UpdateFileSize = ValueToLong(tlv)
+				switch tlv.Tag {
+				case BYTE_WYS_FILE_SHA1:
+					wys.FileSha1 = ValueToByteSlice(tlv)
+				case BYTE_WYS_RTF:
+					wys.RTF = ValueToByteSlice(tlv)
+				case DSTRING_WYS_CURRENT_LAST_VERSION:
+					wys.CurrentLastVersion = ValueToString(tlv)
+				case DSTRING_WYS_LATEST_CHANGES:
+					wys.LatestChanges = ValueToString(tlv)
+				case DSTRING_WYS_MIN_CLIENT_VERSION:
+					wys.MinClientVersion = ValueToString(tlv)
+				case DSTRING_WYS_SERVER_FILE_SITE:
+					wys.ServerFileSite = ValueToString(tlv)
+				case DSTRING_WYS_UPDATE_ERROR_LINK:
+					wys.UpdateErrorLink = ValueToString(tlv)
+				case DSTRING_WYS_UPDATE_ERROR_TEXT:
+					wys.UpdateErrorText = ValueToString(tlv)
+				case DSTRING_WYS_UPDATE_FILE_SITE:
+					wys.UpdateFileSite = ValueToString(tlv)
+					wys.UpdateFileSite = strings.Replace(wys.UpdateFileSite, "%urlargs%", args.Urlargs, 1)
+				case DSTRING_WYS_VERSION_TO_UPDATE:
+					wys.VersionToUpdate = ValueToString(tlv)
+				case INT_WYS_DUMMY_VAR_LEN:
+					// do nothing
+				case INT_WYS_FOLDER:
+					wys.WysFolder = ValueToInt(tlv)
+				case LONG_WYS_UPDATE_FILE_ADLER32_CHECKSUM:
+					wys.UpdateFileAdler32 = ValueToLong(tlv)
+				case LONG_WYS_UPDATE_FILE_SIZE:
+					wys.UpdateFileSize = ValueToLong(tlv)
+				}
+			}
+			//
+			return wys, nil
 		}
 	}
-	return wys
+
+	// wys not parsed
+	err = fmt.Errorf("wys not parsed")
+	return wys, err
+
 }
