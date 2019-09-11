@@ -2,6 +2,7 @@ package updater
 
 import (
 	"encoding/binary"
+	"os"
 )
 
 type TLV struct {
@@ -41,6 +42,10 @@ func ValueToString(tlv *TLV) string {
 	return string(tlv.Value)
 }
 
+func IntValueToBytes(tlv *TLV) []byte {
+	return tlv.Value
+}
+
 // type TLVer interface {
 // 	String() string
 // 	Int() int
@@ -53,3 +58,34 @@ func ValueToString(tlv *TLV) string {
 // func (tlv *TLV) String() string {
 // 	return string(tlv.Value)
 // }
+
+func WriteTLV(f *os.File, tlv TLV) (err error) {
+	if tlv.Length == 0 {
+		// this tag is not needed
+		return nil
+	}
+
+	err = binary.Write(f, binary.BigEndian, tlv.Tag)
+	if nil != err {
+		return err
+	}
+
+	if tlv.DataLength > 0 {
+		err = binary.Write(f, binary.LittleEndian, tlv.DataLength)
+		if nil != err {
+			return err
+		}
+	}
+
+	err = binary.Write(f, binary.LittleEndian, tlv.Length)
+	if nil != err {
+		return err
+	}
+
+	err = binary.Write(f, binary.BigEndian, tlv.Value)
+	if nil != err {
+		return err
+	}
+
+	return nil
+}

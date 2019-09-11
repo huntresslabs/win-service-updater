@@ -137,24 +137,3 @@ func WriteUDT(udt ConfigUDT, path string) error {
 
 	return nil
 }
-
-func WriteTLV(f *os.File, tlv TLV) (err error) {
-	err = binary.Write(f, binary.BigEndian, tlv.Tag)
-	if nil != err {
-		return err
-	}
-
-	err = binary.Write(f, binary.LittleEndian, tlv.Length)
-	if nil != err {
-		return err
-	}
-
-	// TODO write tlv.DataLength
-
-	err = binary.Write(f, binary.BigEndian, tlv.Value)
-	if nil != err {
-		return err
-	}
-
-	return nil
-}
