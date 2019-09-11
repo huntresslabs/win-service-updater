@@ -146,7 +146,6 @@ func ParseWys(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
 			// read HEADER
 			b := make([]byte, 7)
 			fh.Read(b)
-			// fmt.Printf("[+] HEADER %s\n", b)
 
 			for {
 				tlv := ReadWysTLV(fh)
@@ -184,9 +183,12 @@ func ParseWys(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
 					wys.UpdateFileAdler32 = ValueToLong(tlv)
 				case LONG_WYS_UPDATE_FILE_SIZE:
 					wys.UpdateFileSize = ValueToLong(tlv)
+				default:
+					err := fmt.Errorf("wys tag %x not implemented", tlv.Tag)
+					return wys, err
 				}
 			}
-			//
+
 			return wys, nil
 		}
 	}
