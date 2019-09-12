@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+const (
+	A_LESS_THAN_B    = -1
+	A_EQUAL_TO_B     = 0
+	A_GREATER_THAN_B = 1
+)
+
 func convertVerToNum(ver string) int {
 	var num int
 	fields := strings.Split(ver, ".")
@@ -42,15 +48,15 @@ func CompareVersions(a string, b string) int {
 	// fmt.Printf("b = %s (%d)\n", b, bNum)
 
 	if aNum < bNum {
-		return -1
+		return A_LESS_THAN_B
 	}
 	if aNum > bNum {
-		return 1
+		return A_GREATER_THAN_B
 	}
 	//if aNum == bNum {
 	// return 0
 	//}
-	return 0
+	return A_EQUAL_TO_B
 }
 
 func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string, err error) {

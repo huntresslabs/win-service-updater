@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -11,8 +12,10 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,7 +68,7 @@ func TestFunctional(t *testing.T) {
 	argv := []string{"-urlargs=12345:67890"}
 	args := ParseArgs(argv)
 
-	wys, err := ParseWys("../test_files/compressed.wys", args)
+	wys, err := ParseWYS("../test_files/compressed.wys", args)
 	assert.Nil(t, err)
 
 	// add the port from the test server url to the url in the wys config
@@ -83,4 +86,82 @@ func TestFunctional(t *testing.T) {
 	fp := fmt.Sprintf("%s/testdownload", dir)
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
+}
+
+func TestFunctional_CompareVersions(t *testing.T) {
+	file := "../test_files/compressed.wys"
+	argv := []string{"-urlargs=12345:67890"}
+	args := ParseArgs(argv)
+
+	wys, err := ParseWYS(file, args)
+	assert.Nil(t, err)
+
+	rc := CompareVersions("0.1.2.3", wys.VersionToUpdate)
+	assert.Equal(t, A_LESS_THAN_B, rc)
+}
+
+func TestFunctional_Stub(t *testing.T) {
+	wycFile := "../test_files2/client1.0.0.wyc"
+	wysFile := "../test_files2/wyserver1.0.1.wys"
+	wyuFile := "../test_files2/widget1.1.0.1.wyu"
+
+	// wycFile := "../huntress/client.wyc"
+	// wyuFile := "../huntress/huntress-amd64-(0.9.52).wyu"
+	// wysFile := "../huntress/0.9.52.wys"
+
+	tmpDir, err := ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	instDir, err := ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(instDir)
+
+	argv := []string{"-urlargs=12345:67890"}
+	args := ParseArgs(argv)
+
+	iuc, err := ParseWYC(wycFile)
+	assert.Nil(t, err)
+
+	wys, err := ParseWYS(wysFile, args)
+	assert.Nil(t, err)
+
+	fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	fmt.Println("new ", wys.VersionToUpdate)
+	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
+	assert.Equal(t, A_LESS_THAN_B, rc)
+
+	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
+	var rsa rsa.PublicKey
+	rsa.N = key.Modulus
+	rsa.E = key.Exponent
+	fmt.Printf("exponent %d\n", rsa.E)
+
+	sha1hash, err := Sha1Hash(wyuFile)
+	assert.Nil(t, err)
+
+	spew.Dump(sha1hash)
+	spew.Dump(wys.FileSha1)
+
+	// validated
+	err = VerifyUpdate(&rsa, sha1hash, wys.FileSha1)
+	assert.Nil(t, err)
+
+	// extract wyu to tmpDir
+	_, files, err := Unzip(wyuFile, tmpDir)
+	assert.Nil(t, err)
+
+	udt, updates, err := GetUpdateDetails(files)
+	assert.Nil(t, err)
+
+	err = InstallUpdate(udt, updates, instDir)
+	assert.Nil(t, err)
+
+	dat, err := ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
+	assert.Nil(t, err)
+	fmt.Print(string(dat))
 }

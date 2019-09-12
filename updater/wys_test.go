@@ -8,7 +8,7 @@ import (
 
 func TestWYS(t *testing.T) {
 	var args Args
-	wys, err := ParseWys("../test_files/compressed.wys", args)
+	wys, err := ParseWYS("../test_files/compressed.wys", args)
 	assert.Nil(t, err)
 	assert.Contains(t, wys.UpdateFileSite, "127.0.0.1")
 }

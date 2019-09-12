@@ -6,3 +6,7 @@ package updater
 // - base/service.exe
 // - base/config.ini
 // - base/uninstall.exe
+
+// DownloadWYUFile()
+
+// ExtractWYUFile()

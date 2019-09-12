@@ -1,11 +1,18 @@
 package updater
 
 import (
+	"archive/zip"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 )
+
+// >unzip client.wyc
+// Archive:  client.wyc
+//   inflating: iuclient.iuc
+//   inflating: s.png
+//   inflating: t.png
 
 const (
 	DSTRING_IUC_COMPANY_NAME           = 0x01
@@ -28,7 +35,7 @@ const (
 	END_IUC                            = 0xFF
 )
 
-var tags = map[uint8]string{
+var IUCTags = map[uint8]string{
 	BOOL_IUC_CLOSE_WYUPDATE:            "BOOL_IUC_CLOSE_WYUPDATE",
 	BOOL_IUC_HIDE_HEADER_DIVIDER:       "BOOL_IUC_HIDE_HEADER_DIVIDER",
 	DSTRING_IUC_COMPANY_NAME:           "DSTRING_IUC_COMPANY_NAME",
@@ -69,7 +76,7 @@ type ConfigIUC struct {
 	IucPublicKey            TLV
 }
 
-func ReadWycTLV(r io.Reader) *TLV {
+func ReadIUCTLV(r io.Reader) *TLV {
 	var record TLV
 
 	err := binary.Read(r, binary.BigEndian, &record.Tag)
@@ -126,69 +133,86 @@ func ReadWycTLV(r io.Reader) *TLV {
 	return &record
 }
 
-func ParseWyc(path string) (ConfigIUC, error) {
+func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 	var config ConfigIUC
 
-	f, err := os.Open(path)
-	if nil != err {
+	zipr, err := zip.OpenReader(compressedWYC)
+	if err != nil {
 		return config, err
 	}
-	defer f.Close()
+	defer zipr.Close()
 
-	// read HEADER
-	b := make([]byte, 7)
-	f.Read(b)
+	for _, f := range zipr.File {
+		// "iuclient.iuc" is the name of the uncompressed wyc file
+		if f.FileHeader.Name == "iuclient.iuc" {
+			fh, err := f.Open()
+			if err != nil {
+				return config, err
+			}
+			defer fh.Close()
 
-	for {
-		tlv := ReadWycTLV(f)
-		if tlv == nil {
-			break
-		}
+			// f, err := os.Open(path)
+			// if nil != err {
+			// 	return config, err
+			// }
+			// defer f.Close()
 
-		switch tlv.Tag {
-		case DSTRING_IUC_COMPANY_NAME:
-			config.IucCompanyName = *tlv
-		case DSTRING_IUC_PRODUCT_NAME:
-			config.IucProductName = *tlv
-		case DSTRING_IUC_INSTALLED_VERSION:
-			config.IucInstalledVersion = *tlv
-		case DSTRING_IUC_SERVER_FILE_SITE:
-			config.IucServerFileSite = append(config.IucServerFileSite, *tlv)
-		case DSTRING_IUC_WYUPDATE_SERVER_SITE:
-			config.IucWyupdateServerSite = append(config.IucWyupdateServerSite, *tlv)
-		case DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
-			config.IucHeaderImageAlignment = *tlv
-		case DSTRING_IUC_HEADER_TEXT_COLOR:
-			config.IucHeaderTextColor = *tlv
-		case DSTRING_IUC_HEADER_FILENAME:
-			config.IucHeaderFilename = *tlv
-		case DSTRING_IUC_SIDE_IMAGE_FILENAME:
-			config.IucSideImageFilename = *tlv
-		case DSTRING_IUC_LANGUAGE_CULTURE:
-			config.IucLanguageCulture = *tlv
-		case DSTRING_IUC_LANGUAGE_FILENAME:
-			config.IucLanguageFilename = *tlv
-		case INT_IUC_HEADER_TEXT_INDENT:
-			config.IucHeaderTextIndent = *tlv
-		case BOOL_IUC_HIDE_HEADER_DIVIDER:
-			config.IucHideHeaderDivider = *tlv
-		case BOOL_IUC_CLOSE_WYUPDATE:
-			config.IucCloseWyupate = *tlv
-		case STRING_IUC_CUSTOM_TITLE_BAR:
-			config.IucCustomTitleBar = *tlv
-		case STRING_IUC_PUBLIC_KEY:
-			config.IucPublicKey = *tlv
-		case STRING_IUC_GUID:
-			config.IucGUID = *tlv
-		default:
-			err = fmt.Errorf("crap")
-			return config, err
+			// read HEADER
+			b := make([]byte, 7)
+			fh.Read(b)
+
+			for {
+				tlv := ReadIUCTLV(fh)
+				if tlv == nil {
+					break
+				}
+
+				switch tlv.Tag {
+				case DSTRING_IUC_COMPANY_NAME:
+					config.IucCompanyName = *tlv
+				case DSTRING_IUC_PRODUCT_NAME:
+					config.IucProductName = *tlv
+				case DSTRING_IUC_INSTALLED_VERSION:
+					config.IucInstalledVersion = *tlv
+				case DSTRING_IUC_SERVER_FILE_SITE:
+					config.IucServerFileSite = append(config.IucServerFileSite, *tlv)
+				case DSTRING_IUC_WYUPDATE_SERVER_SITE:
+					config.IucWyupdateServerSite = append(config.IucWyupdateServerSite, *tlv)
+				case DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
+					config.IucHeaderImageAlignment = *tlv
+				case DSTRING_IUC_HEADER_TEXT_COLOR:
+					config.IucHeaderTextColor = *tlv
+				case DSTRING_IUC_HEADER_FILENAME:
+					config.IucHeaderFilename = *tlv
+				case DSTRING_IUC_SIDE_IMAGE_FILENAME:
+					config.IucSideImageFilename = *tlv
+				case DSTRING_IUC_LANGUAGE_CULTURE:
+					config.IucLanguageCulture = *tlv
+				case DSTRING_IUC_LANGUAGE_FILENAME:
+					config.IucLanguageFilename = *tlv
+				case INT_IUC_HEADER_TEXT_INDENT:
+					config.IucHeaderTextIndent = *tlv
+				case BOOL_IUC_HIDE_HEADER_DIVIDER:
+					config.IucHideHeaderDivider = *tlv
+				case BOOL_IUC_CLOSE_WYUPDATE:
+					config.IucCloseWyupate = *tlv
+				case STRING_IUC_CUSTOM_TITLE_BAR:
+					config.IucCustomTitleBar = *tlv
+				case STRING_IUC_PUBLIC_KEY:
+					config.IucPublicKey = *tlv
+				case STRING_IUC_GUID:
+					config.IucGUID = *tlv
+				default:
+					err = fmt.Errorf("crap")
+					return config, err
+				}
+			}
 		}
 	}
 	return config, nil
 }
 
-func WriteWYC(config ConfigIUC, path string) error {
+func WriteIUC(config ConfigIUC, path string) error {
 	f, err := os.Create(path)
 	if nil != err {
 		return err

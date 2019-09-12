@@ -126,7 +126,7 @@ func ReadWysTLV(r io.Reader) *TLV {
 	return &record
 }
 
-func ParseWys(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
+func ParseWYS(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
 	zipr, err := zip.OpenReader(compressedWysFile)
 	if err != nil {
 		return wys, err

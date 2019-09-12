@@ -33,12 +33,6 @@ func TestUpdate(t *testing.T) {
 	// assert.Nil(t, err)
 }
 
-const (
-	A_LESS_THAN_B    = -1
-	A_EQUAL_TO_B     = 0
-	A_GREATER_THAN_B = 1
-)
-
 func TestUpdate_CompareVersions(t *testing.T) {
 	type versionTest struct {
 		a        string

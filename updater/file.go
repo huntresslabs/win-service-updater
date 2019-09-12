@@ -2,6 +2,7 @@ package updater
 
 import (
 	"archive/zip"
+	"crypto/sha1"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,29 @@ import (
 func GetExeDir() string {
 	exe, _ := os.Executable()
 	return filepath.Dir(exe)
+}
+
+func Sha1Hash(filePath string) ([]byte, error) {
+	// Open the passed argument and check for any error
+	file, err := os.Open(filePath)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// Tell the program to call the following function when the current function returns
+	defer file.Close()
+
+	// Open a new hash interface to write to
+	hash := sha1.New()
+
+	// Copy the file in the hash interface and check for any error
+	if _, err := io.Copy(hash, file); err != nil {
+		return []byte{}, err
+	}
+
+	hashInBytes := hash.Sum(nil)
+
+	return hashInBytes, nil
 }
 
 func findTempDir() (tempDir string) {

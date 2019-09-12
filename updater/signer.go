@@ -11,18 +11,19 @@ import (
 
 // ""
 
-type RSAKey struct {
-	ModulusString  string   `xml:"Modulus"`
-	ExponentString string   `xml:"Exponent"`
-	Modulus        *big.Int `xml:"-"`
-	Exponent       int      `xml:"-"`
+type Key struct {
+	ModulusString  string        `xml:"Modulus"`
+	ExponentString string        `xml:"Exponent"`
+	Modulus        *big.Int      `xml:"-"`
+	Exponent       int           `xml:"-"`
+	PublicKey      rsa.PublicKey `xml:"-"`
 }
 
 // ParsePublicKey parses a string in the form of
 // <RSAKeyValue><Modulus>%s</Modulus><Exponent>%s</Exponent></RSAKeyValue>
 // returning a struct
-func ParsePublicKey(s string) (RSAKey, error) {
-	var key RSAKey
+func ParsePublicKey(s string) (Key, error) {
+	var key Key
 	err := xml.Unmarshal([]byte(s), &key)
 	if nil != err {
 		return key, err
@@ -42,8 +43,17 @@ func ParsePublicKey(s string) (RSAKey, error) {
 	if nil != err {
 		return key, err
 	}
-	e := binary.LittleEndian.Uint32(data)
-	key.Exponent = int(e)
+
+	// sometimes there is not 4 bytes, so we make it 4 bytes
+	// >>> binary = base64.b64decode('AQAB')
+	// >>> binary
+	// '\x01\x00\x01'
+	// >>> int(binary.encode('hex'), 16)
+	// 65537
+	var b [4]byte
+	copy(b[4-len(data):], data)
+	i := binary.BigEndian.Uint32(b[:])
+	key.Exponent = int(i)
 
 	return key, nil
 }
