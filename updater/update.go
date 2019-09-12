@@ -84,12 +84,12 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
-	for _, s := range udt.ServiceToStopBeforeUpdate {
-		fmt.Printf("Stopping %s\n", ValueToString(&s))
-	}
+	// for _, s := range udt.ServiceToStopBeforeUpdate {
+	// 	fmt.Printf("Stopping %s\n", ValueToString(&s))
+	// }
 
 	for _, f := range srcFiles {
-		fmt.Printf("Moving %s\n", f)
+		// fmt.Printf("Moving %s\n", f)
 		err := MoveFile(f, installDir)
 		if err != nil {
 			return err
@@ -97,16 +97,16 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	}
 
 	// start services
-	for _, s := range udt.ServiceToStartAfterUpdate {
-		fmt.Printf("Starting %s\n", ValueToString(&s))
-	}
+	// for _, s := range udt.ServiceToStartAfterUpdate {
+	// 	fmt.Printf("Starting %s\n", ValueToString(&s))
+	// }
 
 	return nil
 }
 
 func MoveFile(file string, dstDir string) error {
 	dst := filepath.Join(dstDir, filepath.Base(file))
-	fmt.Println(dst)
+	// fmt.Println(dst)
 	// Rename() returns *LinkError
 	return os.Rename(file, dst)
 }

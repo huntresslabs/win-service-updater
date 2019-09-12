@@ -9,8 +9,6 @@ import (
 	"math/big"
 )
 
-// ""
-
 type Key struct {
 	ModulusString  string        `xml:"Modulus"`
 	ExponentString string        `xml:"Exponent"`
@@ -58,7 +56,8 @@ func ParsePublicKey(s string) (Key, error) {
 	return key, nil
 }
 
-func VerifyUpdate(pub *rsa.PublicKey, hashed []byte, sig []byte) error {
+// VerifyHash verifies the signed SHA1
+func VerifyHash(pub *rsa.PublicKey, hashed []byte, sig []byte) error {
 	// func VerifyPKCS1v15(pub *PublicKey, hash crypto.Hash, hashed []byte, sig []byte) error
 	err := rsa.VerifyPKCS1v15(pub, crypto.SHA1, hashed[:], sig)
 	if err != nil {

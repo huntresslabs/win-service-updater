@@ -21,8 +21,9 @@ func TestSigner(t *testing.T) {
 	// wyUpdate stores the public key as XML with base64 encoded modulus and exponent
 	b64Mod := base64.StdEncoding.EncodeToString(privKey.PublicKey.N.Bytes())
 
+	// fmt.Println(privKey.PublicKey.E)
 	exp := make([]byte, 4)
-	binary.LittleEndian.PutUint32(exp, uint32(privKey.PublicKey.E))
+	binary.BigEndian.PutUint32(exp, uint32(privKey.PublicKey.E))
 	b64Exp := base64.StdEncoding.EncodeToString(exp)
 
 	ks := fmt.Sprintf("<RSAKeyValue><Modulus>%s</Modulus><Exponent>%s</Exponent></RSAKeyValue>", b64Mod, b64Exp)
@@ -47,12 +48,12 @@ func TestSigner_VerifyUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	// validated
-	err = VerifyUpdate(&privKey.PublicKey, hashed[:], signature)
+	err = VerifyHash(&privKey.PublicKey, hashed[:], signature)
 	assert.Nil(t, err)
 
 	// not validated, different signing key
 	privKey2, e := rsa.GenerateKey(rng, 2048)
 	assert.Nil(t, e)
-	err = VerifyUpdate(&privKey2.PublicKey, hashed[:], signature)
+	err = VerifyHash(&privKey2.PublicKey, hashed[:], signature)
 	assert.NotNil(t, err)
 }

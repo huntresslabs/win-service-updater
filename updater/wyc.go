@@ -87,7 +87,7 @@ func ReadIUCTLV(r io.Reader) *TLV {
 		return nil
 	}
 
-	// fmt.Printf("- %s (%x)\n", tags[record.Tag], record.Tag)
+	// fmt.Printf("- %s (%x)\n", IUCTags[record.Tag], record.Tag)
 
 	if record.Tag == END_IUC {
 		return nil
