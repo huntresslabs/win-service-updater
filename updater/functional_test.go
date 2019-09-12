@@ -15,7 +15,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -130,8 +129,8 @@ func TestFunctional_Stub(t *testing.T) {
 	wys, err := ParseWYS(wysFile, args)
 	assert.Nil(t, err)
 
-	fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
-	fmt.Println("new ", wys.VersionToUpdate)
+	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	// fmt.Println("new ", wys.VersionToUpdate)
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
@@ -139,17 +138,23 @@ func TestFunctional_Stub(t *testing.T) {
 	var rsa rsa.PublicKey
 	rsa.N = key.Modulus
 	rsa.E = key.Exponent
-	fmt.Printf("exponent %d\n", rsa.E)
+	// fmt.Printf("exponent %d\n", rsa.E)
 
 	sha1hash, err := Sha1Hash(wyuFile)
 	assert.Nil(t, err)
 
-	spew.Dump(sha1hash)
-	spew.Dump(wys.FileSha1)
+	// spew.Dump(sha1hash)
+	// spew.Dump(wys.FileSha1)
 
 	// validated
-	err = VerifyUpdate(&rsa, sha1hash, wys.FileSha1)
+	err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
 	assert.Nil(t, err)
+
+	// adler32
+	if wys.UpdateFileAdler32 != 0 {
+		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, wyuFile)
+		assert.True(t, v)
+	}
 
 	// extract wyu to tmpDir
 	_, files, err := Unzip(wyuFile, tmpDir)
@@ -161,7 +166,8 @@ func TestFunctional_Stub(t *testing.T) {
 	err = InstallUpdate(udt, updates, instDir)
 	assert.Nil(t, err)
 
+	// read our "update"
 	dat, err := ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
 	assert.Nil(t, err)
-	fmt.Print(string(dat))
+	assert.Equal(t, "1.0.1", string(dat))
 }

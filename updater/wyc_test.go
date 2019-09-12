@@ -52,41 +52,41 @@ func Zip(archive string, files []string) {
 }
 
 func TestWYC(t *testing.T) {
-	origFile := "../test_files/client.wyc"
+	origFile := "../test_files2/client1.0.1.wyc"
 	wyc, err := ParseWYC(origFile)
 	assert.Nil(t, err)
-	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/update.wys"))
+	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/updates/wyserver.wys"))
 }
 
 func TestWYC_WriteIUC(t *testing.T) {
 	// create a new uiclient.iuc and compare it to the one in the archive
-	origFile := "../test_files/client.wyc"
-	wyc, err := ParseWYC(origFile)
+
+	origClientWYC := "../test_files2/client1.0.1.wyc"
+
+	wyc, err := ParseWYC(origClientWYC)
+	assert.Nil(t, err)
 
 	tmpIUC, err := ioutil.TempFile("", "example")
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err)
 	tmpIUC.Close()
+	// fmt.Println("tmpIUC", tmpIUC.Name())
 	defer os.Remove(tmpIUC.Name())
 
 	err = WriteIUC(wyc, tmpIUC.Name())
 	assert.Nil(t, err)
 
 	tmpDir, err := ioutil.TempDir("", "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
+	assert.Nil(t, err)
 	defer os.RemoveAll(tmpDir)
 
 	newHash, err := Sha256Hash(tmpIUC.Name())
 	assert.Nil(t, err)
 
 	found := false
-	_, files, err := Unzip(origFile, tmpDir)
+	_, files, err := Unzip(origClientWYC, tmpDir)
 	for _, f := range files {
-		fmt.Println(f)
-		if path.Base(f) == "iuclient.iuc" {
+		// fmt.Println(f)
+		if path.Base(f) == IUCLIENT_IUC {
 			origHash, err := Sha256Hash(f)
 			assert.Nil(t, err)
 			assert.Equal(t, origHash, newHash)

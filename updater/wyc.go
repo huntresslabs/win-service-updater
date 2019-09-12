@@ -144,22 +144,21 @@ func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 
 	for _, f := range zipr.File {
 		// "iuclient.iuc" is the name of the uncompressed wyc file
-		if f.FileHeader.Name == "iuclient.iuc" {
+		if f.FileHeader.Name == IUCLIENT_IUC {
 			fh, err := f.Open()
 			if err != nil {
 				return config, err
 			}
 			defer fh.Close()
 
-			// f, err := os.Open(path)
-			// if nil != err {
-			// 	return config, err
-			// }
-			// defer f.Close()
-
 			// read HEADER
 			b := make([]byte, 7)
 			fh.Read(b)
+
+			if string(b) != "IUCDFV2" {
+				err := fmt.Errorf("invalid iuclient.iuc file")
+				return config, err
+			}
 
 			for {
 				tlv := ReadIUCTLV(fh)
@@ -222,54 +221,54 @@ func WriteIUC(config ConfigIUC, path string) error {
 	// write HEADER
 	f.Write([]byte("IUCDFV2"))
 
-	// DSTRING_IUC_SIDE_IMAGE_FILENAME:
-	WriteTLV(f, config.IucSideImageFilename)
-
-	// DSTRING_IUC_HEADER_TEXT_COLOR:
-	WriteTLV(f, config.IucHeaderTextColor)
-
-	// STRING_IUC_GUID:
-	WriteTLV(f, config.IucGUID)
-
-	// DSTRING_IUC_SERVER_FILE_SITE:
-	for _, s := range config.IucServerFileSite {
-		WriteTLV(f, s)
-	}
-
 	// DSTRING_IUC_COMPANY_NAME:
 	WriteTLV(f, config.IucCompanyName)
-
-	// STRING_IUC_PUBLIC_KEY:
-	WriteTLV(f, config.IucPublicKey)
-
-	// DSTRING_IUC_LANGUAGE_CULTURE:
-	WriteTLV(f, config.IucLanguageCulture)
 
 	// DSTRING_IUC_PRODUCT_NAME:
 	WriteTLV(f, config.IucProductName)
 
-	// INT_IUC_HEADER_TEXT_INDENT:
-	WriteTLV(f, config.IucHeaderTextIndent)
-
-	// DSTRING_IUC_HEADER_FILENAME:
-	WriteTLV(f, config.IucHeaderFilename)
+	// STRING_IUC_GUID:
+	WriteTLV(f, config.IucGUID)
 
 	// DSTRING_IUC_INSTALLED_VERSION:
 	WriteTLV(f, config.IucInstalledVersion)
 
-	// BOOL_IUC_HIDE_HEADER_DIVIDER:
-	WriteTLV(f, config.IucHideHeaderDivider)
-
-	// DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
-	WriteTLV(f, config.IucHeaderImageAlignment)
-
-	// DSTRING_IUC_LANGUAGE_FILENAME - NOT USED
-	WriteTLV(f, config.IucLanguageFilename)
+	// DSTRING_IUC_SERVER_FILE_SITE
+	for _, s := range config.IucServerFileSite {
+		WriteTLV(f, s)
+	}
 
 	// DSTRING_IUC_WYUPDATE_SERVER_SITE - NOT USED
 	for _, s := range config.IucWyupdateServerSite {
 		WriteTLV(f, s)
 	}
+
+	// DSTRING_IUC_HEADER_IMAGE_ALIGNMENT
+	WriteTLV(f, config.IucHeaderImageAlignment)
+
+	// INT_IUC_HEADER_TEXT_INDENT
+	WriteTLV(f, config.IucHeaderTextIndent)
+
+	// DSTRING_IUC_HEADER_TEXT_COLOR
+	WriteTLV(f, config.IucHeaderTextColor)
+
+	// DSTRING_IUC_HEADER_FILENAME
+	WriteTLV(f, config.IucHeaderFilename)
+
+	// DSTRING_IUC_SIDE_IMAGE_FILENAME:
+	WriteTLV(f, config.IucSideImageFilename)
+
+	// DSTRING_IUC_LANGUAGE_CULTURE:
+	WriteTLV(f, config.IucLanguageCulture)
+
+	// BOOL_IUC_HIDE_HEADER_DIVIDER:
+	WriteTLV(f, config.IucHideHeaderDivider)
+
+	// STRING_IUC_PUBLIC_KEY:
+	WriteTLV(f, config.IucPublicKey)
+
+	// DSTRING_IUC_LANGUAGE_FILENAME - NOT USED
+	WriteTLV(f, config.IucLanguageFilename)
 
 	// STRING_IUC_CUSTOM_TITLE_BAR - NOT USED
 	WriteTLV(f, config.IucCustomTitleBar)
