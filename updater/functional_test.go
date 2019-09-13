@@ -134,13 +134,46 @@ func TestFunctional_Stub(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 	defer os.RemoveAll(instDir)
 
+	// test server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wyuFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYU.Close()
+
+	// we need the port from the test server
+	tsURI, err := url.ParseRequestURI(tsWYS.URL)
+	assert.Nil(t, err)
+	port := tsURI.Port()
+
 	argv := []string{"-urlargs=12345:67890"}
 	args := ParseArgs(argv)
 
 	iuc, err := ParseWYC(wycFile)
 	assert.Nil(t, err)
 
-	wys, err := ParseWYS(wysFile, args)
+	// add the port from the test server url to the url in the wys config
+	u, err := url.ParseRequestURI(string(iuc.IucServerFileSite[0].Value))
+	assert.Nil(t, err)
+	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
+	turi := u.String()
+
+	fp := fmt.Sprintf("%s/wys", tmpDir)
+	// fmt.Println(fp)
+	err = DownloadFile(turi, fp)
+	assert.Nil(t, err)
+
+	wys, err := ParseWYS(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -148,13 +181,19 @@ func TestFunctional_Stub(t *testing.T) {
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
+	// download wyu
+	fp = fmt.Sprintf("%s/wyu", tmpDir)
+	// fmt.Println(fp)
+	err = DownloadFile(tsWYU.URL, fp)
+	assert.Nil(t, err)
+
 	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
 	var rsa rsa.PublicKey
 	rsa.N = key.Modulus
 	rsa.E = key.Exponent
 	// fmt.Printf("exponent %d\n", rsa.E)
 
-	sha1hash, err := Sha1Hash(wyuFile)
+	sha1hash, err := Sha1Hash(fp)
 	assert.Nil(t, err)
 
 	// spew.Dump(sha1hash)
@@ -166,12 +205,12 @@ func TestFunctional_Stub(t *testing.T) {
 
 	// adler32
 	if wys.UpdateFileAdler32 != 0 {
-		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, wyuFile)
+		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, fp)
 		assert.True(t, v)
 	}
 
 	// extract wyu to tmpDir
-	_, files, err := Unzip(wyuFile, tmpDir)
+	_, files, err := Unzip(fp, tmpDir)
 	assert.Nil(t, err)
 
 	udt, updates, err := GetUpdateDetails(files)
@@ -192,6 +231,7 @@ func TestFunctional_Stub(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "1.0.1", string(dat))
 
+	// rollback
 	err = RollbackFiles(backupDir, instDir)
 	assert.Nil(t, err)
 
