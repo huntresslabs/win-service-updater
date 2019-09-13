@@ -85,6 +85,8 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 	return udt, updates, nil
 }
 
+// BackupFiles copies all the files to be updated in `srcDir` to a `backupDir`
+// `backupDir` is returned
 func BackupFiles(updates []string, srcDir string) (backupDir string, err error) {
 	backupDir, err = ioutil.TempDir("", "prefix")
 	if err != nil {
@@ -95,14 +97,35 @@ func BackupFiles(updates []string, srcDir string) (backupDir string, err error) 
 	// backup the files we are about to update
 	for _, f := range updates {
 		orig := path.Join(srcDir, path.Base(f))
-		fmt.Println(orig)
-		CopyFile(orig, backupDir)
-		// if nil != err {
-		// 	return "", err
-		// }
+		back := path.Join(backupDir, path.Base(f))
+		// fmt.Println("orig", orig)
+		// fmt.Println("back", back)
+		_, err = CopyFile(orig, back)
+		if nil != err {
+			return "", err
+		}
 	}
 
 	return backupDir, nil
+}
+
+// RollbackFiles copies all the files from `backupDir`
+func RollbackFiles(backupDir string, dstDir string) (err error) {
+	files, err := ioutil.ReadDir(backupDir)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		orig := path.Join(backupDir, path.Base(f.Name()))
+		dstFile := path.Join(dstDir, path.Base(f.Name()))
+		_, err = CopyFile(orig, dstFile)
+		if nil != err {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
@@ -129,21 +152,20 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 
 func MoveFile(file string, dstDir string) error {
 	dst := filepath.Join(dstDir, filepath.Base(file))
-	fmt.Println(dst)
 	// Rename() returns *LinkError
 	err := os.Rename(file, dst)
-	if err != nil {
-		e := err.(*os.LinkError)
-		fmt.Println("Op: ", e.Op)
-		fmt.Println("Old: ", e.Old)
-		fmt.Println("New: ", e.New)
-		fmt.Println("Err: ", e.Err)
-	}
+	// if err != nil {
+	// 	e := err.(*os.LinkError)
+	// 	fmt.Println("Op: ", e.Op)
+	// 	fmt.Println("Old: ", e.Old)
+	// 	fmt.Println("New: ", e.New)
+	// 	fmt.Println("Err: ", e.Err)
+	// }
 	return err
 }
 
-func CopyFile(src, dstDir string) (int64, error) {
-	dst := filepath.Join(dstDir, filepath.Base(src))
+func CopyFile(src, dst string) (int64, error) {
+	// dst := filepath.Join(dstDir, filepath.Base(src))
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
 		return 0, err

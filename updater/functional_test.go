@@ -177,7 +177,11 @@ func TestFunctional_Stub(t *testing.T) {
 	udt, updates, err := GetUpdateDetails(files)
 	assert.Nil(t, err)
 
-	_, err = BackupFiles(updates, instDir)
+	// make the file that will be replaced
+	err = ioutil.WriteFile(path.Join(instDir, "Widget1.txt"), []byte("1.0.0"), 0644)
+	assert.Nil(t, err)
+
+	backupDir, err := BackupFiles(updates, instDir)
 	assert.Nil(t, err)
 
 	err = InstallUpdate(udt, updates, instDir)
@@ -187,4 +191,12 @@ func TestFunctional_Stub(t *testing.T) {
 	dat, err := ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
 	assert.Nil(t, err)
 	assert.Equal(t, "1.0.1", string(dat))
+
+	err = RollbackFiles(backupDir, instDir)
+	assert.Nil(t, err)
+
+	// original file should be restored
+	dat, err = ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
+	assert.Nil(t, err)
+	assert.Equal(t, "1.0.0", string(dat))
 }
