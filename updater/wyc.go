@@ -93,6 +93,8 @@ func ReadIUCTLV(r io.Reader) *TLV {
 		return nil
 	}
 
+	record.TagString = IUCTags[record.Tag]
+
 	switch record.Tag {
 	case DSTRING_IUC_COMPANY_NAME,
 		DSTRING_IUC_PRODUCT_NAME,
@@ -168,38 +170,55 @@ func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 
 				switch tlv.Tag {
 				case DSTRING_IUC_COMPANY_NAME:
+					tlv.Type = TLV_DSTRING
 					config.IucCompanyName = *tlv
 				case DSTRING_IUC_PRODUCT_NAME:
+					tlv.Type = TLV_DSTRING
 					config.IucProductName = *tlv
 				case DSTRING_IUC_INSTALLED_VERSION:
+					tlv.Type = TLV_DSTRING
 					config.IucInstalledVersion = *tlv
 				case DSTRING_IUC_SERVER_FILE_SITE:
+					tlv.Type = TLV_DSTRING
 					config.IucServerFileSite = append(config.IucServerFileSite, *tlv)
 				case DSTRING_IUC_WYUPDATE_SERVER_SITE:
+					tlv.Type = TLV_DSTRING
 					config.IucWyupdateServerSite = append(config.IucWyupdateServerSite, *tlv)
 				case DSTRING_IUC_HEADER_IMAGE_ALIGNMENT:
+					tlv.Type = TLV_DSTRING
 					config.IucHeaderImageAlignment = *tlv
 				case DSTRING_IUC_HEADER_TEXT_COLOR:
+					tlv.Type = TLV_DSTRING
 					config.IucHeaderTextColor = *tlv
 				case DSTRING_IUC_HEADER_FILENAME:
+					tlv.Type = TLV_DSTRING
 					config.IucHeaderFilename = *tlv
 				case DSTRING_IUC_SIDE_IMAGE_FILENAME:
+					tlv.Type = TLV_DSTRING
 					config.IucSideImageFilename = *tlv
 				case DSTRING_IUC_LANGUAGE_CULTURE:
+					tlv.Type = TLV_DSTRING
 					config.IucLanguageCulture = *tlv
 				case DSTRING_IUC_LANGUAGE_FILENAME:
+					tlv.Type = TLV_DSTRING
 					config.IucLanguageFilename = *tlv
 				case INT_IUC_HEADER_TEXT_INDENT:
+					tlv.Type = TLV_INT
 					config.IucHeaderTextIndent = *tlv
 				case BOOL_IUC_HIDE_HEADER_DIVIDER:
+					tlv.Type = TLV_BOOL
 					config.IucHideHeaderDivider = *tlv
 				case BOOL_IUC_CLOSE_WYUPDATE:
+					tlv.Type = TLV_BOOL
 					config.IucCloseWyupate = *tlv
 				case STRING_IUC_CUSTOM_TITLE_BAR:
+					tlv.Type = TLV_STRING
 					config.IucCustomTitleBar = *tlv
 				case STRING_IUC_PUBLIC_KEY:
+					tlv.Type = TLV_STRING
 					config.IucPublicKey = *tlv
 				case STRING_IUC_GUID:
+					tlv.Type = TLV_STRING
 					config.IucGUID = *tlv
 				default:
 					err = fmt.Errorf("crap")
