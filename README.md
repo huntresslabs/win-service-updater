@@ -12,6 +12,8 @@ Partial implementation of wyUpdate functionality. This updater is written in GoL
 - designed to only be run from a service or command-line, there is no GUI component
 - only full binary replacement (no diff)
 - only supports stopping/starting services before/after update
+  - no registry updates, COM updates, etc.
+- no functionality to elevate privileges (need admin to install a service anyway)
 
 ## Arguments supported
 
