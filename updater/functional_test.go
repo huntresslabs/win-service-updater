@@ -99,6 +99,28 @@ func TestFunctional_CompareVersions(t *testing.T) {
 	assert.Equal(t, A_LESS_THAN_B, rc)
 }
 
+func Setup() (tmpDir string, tmpFile string) {
+	tmpDir, err := ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tmpFile, err = ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return tmpDir, tmpFile
+}
+
+func GetTmpDir() (tmpDir string) {
+	tmpDir, err := ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tmpDir
+}
+
 func TestFunctional_Stub(t *testing.T) {
 	wycFile := "../test_files2/client1.0.0.wyc"
 	wysFile := "../test_files2/wyserver1.0.1.wys"
@@ -108,16 +130,8 @@ func TestFunctional_Stub(t *testing.T) {
 	// wyuFile := "../huntress/huntress-amd64-(0.9.52).wyu"
 	// wysFile := "../huntress/0.9.52.wys"
 
-	tmpDir, err := ioutil.TempDir("", "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
+	tmpDir, instDir := Setup()
 	defer os.RemoveAll(tmpDir)
-
-	instDir, err := ioutil.TempDir("", "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer os.RemoveAll(instDir)
 
 	argv := []string{"-urlargs=12345:67890"}
@@ -161,6 +175,9 @@ func TestFunctional_Stub(t *testing.T) {
 	assert.Nil(t, err)
 
 	udt, updates, err := GetUpdateDetails(files)
+	assert.Nil(t, err)
+
+	_, err = BackupFiles(updates, instDir)
 	assert.Nil(t, err)
 
 	err = InstallUpdate(udt, updates, instDir)

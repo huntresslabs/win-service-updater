@@ -2,6 +2,9 @@ package updater
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -82,6 +85,26 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 	return udt, updates, nil
 }
 
+func BackupFiles(updates []string, srcDir string) (backupDir string, err error) {
+	backupDir, err = ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.Mkdir(backupDir, 0777)
+
+	// backup the files we are about to update
+	for _, f := range updates {
+		orig := path.Join(srcDir, path.Base(f))
+		fmt.Println(orig)
+		CopyFile(orig, backupDir)
+		// if nil != err {
+		// 	return "", err
+		// }
+	}
+
+	return backupDir, nil
+}
+
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
 	// for _, s := range udt.ServiceToStopBeforeUpdate {
@@ -106,7 +129,41 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 
 func MoveFile(file string, dstDir string) error {
 	dst := filepath.Join(dstDir, filepath.Base(file))
-	// fmt.Println(dst)
+	fmt.Println(dst)
 	// Rename() returns *LinkError
-	return os.Rename(file, dst)
+	err := os.Rename(file, dst)
+	if err != nil {
+		e := err.(*os.LinkError)
+		fmt.Println("Op: ", e.Op)
+		fmt.Println("Old: ", e.Old)
+		fmt.Println("New: ", e.New)
+		fmt.Println("Err: ", e.Err)
+	}
+	return err
+}
+
+func CopyFile(src, dstDir string) (int64, error) {
+	dst := filepath.Join(dstDir, filepath.Base(src))
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return 0, err
+	}
+
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", src)
+	}
+
+	source, err := os.Open(src)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dst)
+	if err != nil {
+		return 0, err
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
 }

@@ -45,6 +45,8 @@ func ReadUdtTLV(r io.Reader) *TLV {
 		return nil
 	}
 
+	record.TagString = UdtTags[record.Tag]
+
 	if record.Tag == END_UDT {
 		return nil
 	}
@@ -79,6 +81,11 @@ func ParseUDT(path string) (ConfigUDT, error) {
 	// read HEADER
 	b := make([]byte, 7)
 	f.Read(b)
+
+	if string(b) != "IUUDFV2" {
+		err := fmt.Errorf("invalid update details file")
+		return udt, err
+	}
 
 	for {
 		tlv := ReadUdtTLV(f)
