@@ -136,6 +136,7 @@ func ReadIUCTLV(r io.Reader) *TLV {
 	return &record
 }
 
+// GetWYSURLs returns the ServerFileSite(s) listed in the WYC file.
 func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
 	for _, s := range config.IucServerFileSite {
 		u := strings.Replace(string(s.Value), "%urlargs%", args.Urlargs, 1)
