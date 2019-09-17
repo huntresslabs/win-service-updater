@@ -283,6 +283,10 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	udt, updates, err := GetUpdateDetails(files)
 	assert.Nil(t, err)
 
+	// the udt should specify stopping/starting the Spooler
+	assert.Equal(t, string(udt.ServiceToStopBeforeUpdate[0].Value), "Spooler")
+	assert.Equal(t, string(udt.ServiceToStartAfterUpdate[0].Value), "Spooler")
+
 	// make the file that will be replaced
 	err = ioutil.WriteFile(path.Join(instDir, "WidgetX.txt"), []byte("1.0.0"), 0644)
 	assert.Nil(t, err)

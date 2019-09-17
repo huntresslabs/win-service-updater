@@ -109,7 +109,11 @@ func BackupFiles(updates []string, srcDir string) (backupDir string, err error) 
 	return backupDir, nil
 }
 
-// RollbackFiles copies all the files from `backupDir`
+func DeleteDirectory(dir string) error {
+	return os.RemoveAll(dir)
+}
+
+// RollbackFiles copies all the files from `backupDir` to `dstDir`
 func RollbackFiles(backupDir string, dstDir string) (err error) {
 	files, err := ioutil.ReadDir(backupDir)
 	if err != nil {
@@ -130,8 +134,9 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
+	// TODO call actual function
 	// for _, s := range udt.ServiceToStopBeforeUpdate {
-	// 	fmt.Printf("Stopping %s\n", ValueToString(&s))
+	// fmt.Printf("Stopping %s\n", ValueToString(&s))
 	// }
 
 	for _, f := range srcFiles {
@@ -143,6 +148,7 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	}
 
 	// start services
+	// TODO call actual function
 	// for _, s := range udt.ServiceToStartAfterUpdate {
 	// 	fmt.Printf("Starting %s\n", ValueToString(&s))
 	// }
