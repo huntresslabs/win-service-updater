@@ -51,54 +51,6 @@ func Sha256Hash(filePath string) (string, error) {
 	return sum, nil
 }
 
-func TestFunctional(t *testing.T) {
-	// test server
-	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`body`))
-	}))
-	defer ts.Close()
-
-	// we need the port from the test server
-	tsURI, err := url.ParseRequestURI(ts.URL)
-	assert.Nil(t, err)
-	port := tsURI.Port()
-
-	argv := []string{"-urlargs=12345:67890"}
-	args := ParseArgs(argv)
-
-	wys, err := ParseWYS("../test_files/compressed.wys", args)
-	assert.Nil(t, err)
-
-	// add the port from the test server url to the url in the wys config
-	u, err := url.ParseRequestURI(wys.UpdateFileSite)
-	assert.Nil(t, err)
-	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
-	turi := u.String()
-
-	dir, err := ioutil.TempDir("", "prefix")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	fp := fmt.Sprintf("%s/testdownload", dir)
-	err = DownloadFile(turi, fp)
-	assert.Nil(t, err)
-}
-
-func TestFunctional_CompareVersions(t *testing.T) {
-	file := "../test_files/compressed.wys"
-	argv := []string{"-urlargs=12345:67890"}
-	args := ParseArgs(argv)
-
-	wys, err := ParseWYS(file, args)
-	assert.Nil(t, err)
-
-	rc := CompareVersions("0.1.2.3", wys.VersionToUpdate)
-	assert.Equal(t, A_LESS_THAN_B, rc)
-}
-
 func Setup() (tmpDir string, tmpFile string) {
 	tmpDir, err := ioutil.TempDir("", "prefix")
 	if err != nil {
@@ -121,55 +73,7 @@ func GetTmpDir() (tmpDir string) {
 	return tmpDir
 }
 
-func TestFunctional_SameVersion(t *testing.T) {
-	wycFile := "../test_files2/client1.0.1.wyc"
-	wysFile := "../test_files2/wyserver1.0.1.wys"
-
-	tmpDir, instDir := Setup()
-	defer os.RemoveAll(tmpDir)
-	defer os.RemoveAll(instDir)
-
-	// wys server
-	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		dat, err := ioutil.ReadFile(wysFile)
-		assert.Nil(t, err)
-		w.Write(dat)
-	}))
-	defer tsWYS.Close()
-
-	// we need the port from the test server
-	tsURI, err := url.ParseRequestURI(tsWYS.URL)
-	assert.Nil(t, err)
-	port := tsURI.Port()
-
-	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
-	args := ParseArgs(argv)
-
-	iuc, err := ParseWYC(wycFile)
-	assert.Nil(t, err)
-
-	// add the port from the test server url to the url in the wys config
-	u, err := url.ParseRequestURI(string(iuc.IucServerFileSite[0].Value))
-	assert.Nil(t, err)
-	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
-	turi := u.String()
-
-	fp := fmt.Sprintf("%s/wys", tmpDir)
-	// fmt.Println(fp)
-	err = DownloadFile(turi, fp)
-	assert.Nil(t, err)
-
-	wys, err := ParseWYS(fp, args)
-	assert.Nil(t, err)
-
-	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
-	// fmt.Println("new ", wys.VersionToUpdate)
-	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
-	assert.Equal(t, A_EQUAL_TO_B, rc)
-}
-
-func fixupURL(uri string, testURL string) string {
+func fixupTestURL(uri string, testURL string) string {
 	// we need the port from the test server
 	tsURI, err := url.ParseRequestURI(testURL)
 	if nil != err {
@@ -186,10 +90,63 @@ func fixupURL(uri string, testURL string) string {
 	return u.String()
 }
 
+// Test functions
+
+func TestFunctional_CompareVersions(t *testing.T) {
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+
+	argv := []string{"-urlargs=12345:67890"}
+	args := ParseArgs(argv)
+
+	wys, err := ParseWYS(wysFile, args)
+	assert.Nil(t, err)
+
+	rc := CompareVersions("0.1.2.3", wys.VersionToUpdate)
+	assert.Equal(t, A_LESS_THAN_B, rc)
+}
+
+func TestFunctional_SameVersion(t *testing.T) {
+	wycFile := "../test_files/client.1.0.1.wyc"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+
+	tmpDir, instDir := Setup()
+	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(instDir)
+
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
+	args := ParseArgs(argv)
+
+	iuc, err := ParseWYC(wycFile)
+	assert.Nil(t, err)
+
+	uri := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
+
+	fp := fmt.Sprintf("%s/wys", tmpDir)
+	err = DownloadFile(uri, fp)
+	assert.Nil(t, err)
+
+	wys, err := ParseWYS(fp, args)
+	assert.Nil(t, err)
+
+	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	// fmt.Println("new ", wys.VersionToUpdate)
+	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
+	assert.Equal(t, A_EQUAL_TO_B, rc)
+}
+
 func TestFunctional_URLArgs(t *testing.T) {
-	wycFile := "../test_files2/client1.0.0.wyc"
-	wysFile := "../test_files2/wyserver1.0.1.wys"
-	wyuFile := "../test_files2/widget1.1.0.1.wyu"
+	wycFile := "../test_files/client.1.0.0.wyc"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wyuFile := "../test_files/widgetX.1.0.1.wyu"
 
 	auth := "12345:67890"
 
@@ -199,7 +156,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 
 	// test server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("URL:", r.URL)
+		assert.Contains(t, r.URL.String(), auth)
 		w.WriteHeader(http.StatusOK)
 		dat, err := ioutil.ReadFile(wysFile)
 		assert.Nil(t, err)
@@ -222,16 +179,16 @@ func TestFunctional_URLArgs(t *testing.T) {
 	iuc, err := ParseWYC(wycFile)
 	assert.Nil(t, err)
 
-	turi := fixupURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
-	fmt.Println("Server")
+	urls := GetWYSURLs(iuc, args)
+
+	// fixup URL adding port from test server
+	turi := fixupTestURL(urls[0], tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	// fmt.Println(fp)
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 
 	wys, err := ParseWYS(fp, args)
-	fmt.Printf("%+v\n", wys)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -239,20 +196,20 @@ func TestFunctional_URLArgs(t *testing.T) {
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
-	turi = fixupURL(wys.UpdateFileSite, tsWYU.URL)
-	// turi = fmt.Sprintf("%s?auth=%s", turi, args.Urlargs)
+	turi = fixupTestURL(wys.UpdateFileSite, tsWYU.URL)
 
 	// download wyu
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
-	// fmt.Println(fp)
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 }
 
 func TestFunctional_UpdateWithRollback(t *testing.T) {
-	wycFile := "../test_files2/client1.0.0.wyc"
-	wysFile := "../test_files2/wyserver1.0.1.wys"
-	wyuFile := "../test_files2/widget1.1.0.1.wyu"
+	wycFile := "../test_files/client.1.0.0.wyc"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+
+	auth := "12345:67890"
 
 	tmpDir, instDir := Setup()
 	defer os.RemoveAll(tmpDir)
@@ -275,25 +232,16 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	}))
 	defer tsWYU.Close()
 
-	// we need the port from the test server
-	tsURI, err := url.ParseRequestURI(tsWYS.URL)
-	assert.Nil(t, err)
-	port := tsURI.Port()
-
-	argv := []string{"-urlargs=12345:67890"}
+	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
 	args := ParseArgs(argv)
 
 	iuc, err := ParseWYC(wycFile)
 	assert.Nil(t, err)
 
-	// add the port from the test server url to the url in the wys config
-	u, err := url.ParseRequestURI(string(iuc.IucServerFileSite[0].Value))
-	assert.Nil(t, err)
-	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
-	turi := u.String()
+	// fixup URL adding port from test server
+	turi := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	// fmt.Println(fp)
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 
@@ -307,7 +255,6 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 
 	// download wyu
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
-	// fmt.Println(fp)
 	err = DownloadFile(tsWYU.URL, fp)
 	assert.Nil(t, err)
 
@@ -315,13 +262,9 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	var rsa rsa.PublicKey
 	rsa.N = key.Modulus
 	rsa.E = key.Exponent
-	// fmt.Printf("exponent %d\n", rsa.E)
 
 	sha1hash, err := Sha1Hash(fp)
 	assert.Nil(t, err)
-
-	// spew.Dump(sha1hash)
-	// spew.Dump(wys.FileSha1)
 
 	// validated
 	err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
@@ -341,7 +284,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	assert.Nil(t, err)
 
 	// make the file that will be replaced
-	err = ioutil.WriteFile(path.Join(instDir, "Widget1.txt"), []byte("1.0.0"), 0644)
+	err = ioutil.WriteFile(path.Join(instDir, "WidgetX.txt"), []byte("1.0.0"), 0644)
 	assert.Nil(t, err)
 
 	backupDir, err := BackupFiles(updates, instDir)
@@ -351,7 +294,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	assert.Nil(t, err)
 
 	// read our "update"
-	dat, err := ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
+	dat, err := ioutil.ReadFile(path.Join(instDir, "WidgetX.txt"))
 	assert.Nil(t, err)
 	assert.Equal(t, "1.0.1", string(dat))
 
@@ -360,7 +303,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	assert.Nil(t, err)
 
 	// original file should be restored
-	dat, err = ioutil.ReadFile(path.Join(instDir, "Widget1.txt"))
+	dat, err = ioutil.ReadFile(path.Join(instDir, "WidgetX.txt"))
 	assert.Nil(t, err)
 	assert.Equal(t, "1.0.0", string(dat))
 }

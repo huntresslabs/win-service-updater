@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 // >unzip client.wyc
@@ -133,6 +134,14 @@ func ReadIUCTLV(r io.Reader) *TLV {
 
 	// fmt.Println("[+] read TLV record")
 	return &record
+}
+
+func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
+	for _, s := range config.IucServerFileSite {
+		u := strings.Replace(string(s.Value), "%urlargs%", args.Urlargs, 1)
+		urls = append(urls, u)
+	}
+	return urls
 }
 
 func ParseWYC(compressedWYC string) (ConfigIUC, error) {

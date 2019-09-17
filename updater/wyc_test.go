@@ -52,16 +52,16 @@ func Zip(archive string, files []string) {
 }
 
 func TestWYC(t *testing.T) {
-	origFile := "../test_files2/client1.0.1.wyc"
+	origFile := "../test_files/client.1.0.0.wyc"
 	wyc, err := ParseWYC(origFile)
 	assert.Nil(t, err)
-	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/updates/wyserver.wys"))
+	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/updates/wyserver.wys?key=%urlargs%"))
 }
 
 func TestWYC_WriteIUC(t *testing.T) {
 	// create a new uiclient.iuc and compare it to the one in the archive
 
-	origClientWYC := "../test_files2/client1.0.1.wyc"
+	origClientWYC := "../test_files/client.1.0.0.wyc"
 
 	wyc, err := ParseWYC(origClientWYC)
 	assert.Nil(t, err)
