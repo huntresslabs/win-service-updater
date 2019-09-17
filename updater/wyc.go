@@ -77,6 +77,8 @@ type ConfigIUC struct {
 	IucPublicKey            TLV
 }
 
+type UpdateInfoer struct{}
+
 func ReadIUCTLV(r io.Reader) *TLV {
 	var record TLV
 
@@ -144,7 +146,7 @@ func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
 	return urls
 }
 
-func ParseWYC(compressedWYC string) (ConfigIUC, error) {
+func (uier UpdateInfoer) ParseWYC(compressedWYC string) (ConfigIUC, error) {
 	var config ConfigIUC
 
 	zipr, err := zip.OpenReader(compressedWYC)
