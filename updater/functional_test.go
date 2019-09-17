@@ -121,14 +121,138 @@ func GetTmpDir() (tmpDir string) {
 	return tmpDir
 }
 
-func TestFunctional_Stub(t *testing.T) {
+func TestFunctional_SameVersion(t *testing.T) {
+	wycFile := "../test_files2/client1.0.1.wyc"
+	wysFile := "../test_files2/wyserver1.0.1.wys"
+
+	tmpDir, instDir := Setup()
+	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(instDir)
+
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	// we need the port from the test server
+	tsURI, err := url.ParseRequestURI(tsWYS.URL)
+	assert.Nil(t, err)
+	port := tsURI.Port()
+
+	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
+	args := ParseArgs(argv)
+
+	iuc, err := ParseWYC(wycFile)
+	assert.Nil(t, err)
+
+	// add the port from the test server url to the url in the wys config
+	u, err := url.ParseRequestURI(string(iuc.IucServerFileSite[0].Value))
+	assert.Nil(t, err)
+	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
+	turi := u.String()
+
+	fp := fmt.Sprintf("%s/wys", tmpDir)
+	// fmt.Println(fp)
+	err = DownloadFile(turi, fp)
+	assert.Nil(t, err)
+
+	wys, err := ParseWYS(fp, args)
+	assert.Nil(t, err)
+
+	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	// fmt.Println("new ", wys.VersionToUpdate)
+	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
+	assert.Equal(t, A_EQUAL_TO_B, rc)
+}
+
+func fixupURL(uri string, testURL string) string {
+	// we need the port from the test server
+	tsURI, err := url.ParseRequestURI(testURL)
+	if nil != err {
+		log.Fatal(err)
+	}
+	port := tsURI.Port()
+
+	// add the port from the test server url to the url in the wys config
+	u, err := url.ParseRequestURI(uri)
+	if nil != err {
+		log.Fatal(err)
+	}
+	u.Host = fmt.Sprintf("%s:%s", u.Host, port)
+	return u.String()
+}
+
+func TestFunctional_URLArgs(t *testing.T) {
 	wycFile := "../test_files2/client1.0.0.wyc"
 	wysFile := "../test_files2/wyserver1.0.1.wys"
 	wyuFile := "../test_files2/widget1.1.0.1.wyu"
 
-	// wycFile := "../huntress/client.wyc"
-	// wyuFile := "../huntress/huntress-amd64-(0.9.52).wyu"
-	// wysFile := "../huntress/0.9.52.wys"
+	auth := "12345:67890"
+
+	tmpDir, instDir := Setup()
+	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(instDir)
+
+	// test server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("URL:", r.URL)
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.String(), auth)
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wyuFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYU.Close()
+
+	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
+	args := ParseArgs(argv)
+
+	iuc, err := ParseWYC(wycFile)
+	assert.Nil(t, err)
+
+	turi := fixupURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
+	fmt.Println("Server")
+
+	fp := fmt.Sprintf("%s/wys", tmpDir)
+	// fmt.Println(fp)
+	err = DownloadFile(turi, fp)
+	assert.Nil(t, err)
+
+	wys, err := ParseWYS(fp, args)
+	fmt.Printf("%+v\n", wys)
+	assert.Nil(t, err)
+
+	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	// fmt.Println("new ", wys.VersionToUpdate)
+	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
+	assert.Equal(t, A_LESS_THAN_B, rc)
+
+	turi = fixupURL(wys.UpdateFileSite, tsWYU.URL)
+	// turi = fmt.Sprintf("%s?auth=%s", turi, args.Urlargs)
+
+	// download wyu
+	fp = fmt.Sprintf("%s/wyu", tmpDir)
+	// fmt.Println(fp)
+	err = DownloadFile(turi, fp)
+	assert.Nil(t, err)
+}
+
+func TestFunctional_UpdateWithRollback(t *testing.T) {
+	wycFile := "../test_files2/client1.0.0.wyc"
+	wysFile := "../test_files2/wyserver1.0.1.wys"
+	wyuFile := "../test_files2/widget1.1.0.1.wyu"
 
 	tmpDir, instDir := Setup()
 	defer os.RemoveAll(tmpDir)

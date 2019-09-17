@@ -15,7 +15,8 @@ func TestArgs(t *testing.T) {
 	argv = []string{"/justcheck", "/outputinfo=foo"}
 	args = ParseArgs(argv)
 	assert.True(t, args.Justcheck)
-	assert.Equal(t, args.Outputinfo, "foo")
+	assert.True(t, args.Outputinfo)
+	assert.Equal(t, args.OutputinfoLog, "foo")
 
 	argv = []string{"/fromservice", "/quickcheck"}
 	args = ParseArgs(argv)

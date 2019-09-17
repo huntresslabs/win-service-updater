@@ -12,17 +12,20 @@ import (
 // "/outputinfo="
 // "/fromservice"
 // "-logfile="
+// "-cdata="
 
 // https://wyday.com/wybuild/help/wyupdate-commandline.php
 
 type Args struct {
-	Quickcheck  bool
-	Justcheck   bool
-	Noerr       bool
-	Fromservice bool
-	Urlargs     string
-	Outputinfo  string
-	Logfile     string
+	Quickcheck    bool
+	Justcheck     bool
+	Noerr         bool
+	Fromservice   bool
+	Urlargs       string
+	Outputinfo    bool
+	OutputinfoLog string
+	Logfile       string
+	Cdata         string
 }
 
 func ParseArgs(argsSlice []string) Args {
@@ -39,17 +42,21 @@ func ParseArgs(argsSlice []string) Args {
 			args.Noerr = true
 		case larg == "/fromservice":
 			args.Fromservice = true
-		case larg == "/justcheck":
-			args.Justcheck = true
 		case strings.HasPrefix(larg, "-urlargs="):
 			fields := strings.Split(larg, "=")
 			args.Urlargs = fields[1]
 		case strings.HasPrefix(larg, "-logfile="):
 			fields := strings.Split(larg, "=")
 			args.Logfile = fields[1]
-		case strings.HasPrefix(larg, "/outputinfo="):
+		case strings.HasPrefix(larg, "/outputinfo"):
+			args.Outputinfo = true
+			if strings.Contains(larg, "=") {
+				fields := strings.Split(larg, "=")
+				args.OutputinfoLog = fields[1]
+			}
+		case strings.HasPrefix(larg, "-cdata="):
 			fields := strings.Split(larg, "=")
-			args.Outputinfo = fields[1]
+			args.Cdata = fields[1]
 		}
 	}
 	return args
