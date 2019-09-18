@@ -196,7 +196,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
-	turi = fixupTestURL(wys.UpdateFileSite, tsWYU.URL)
+	turi = fixupTestURL(wys.UpdateFileSite[0], tsWYU.URL)
 
 	// download wyu
 	fp = fmt.Sprintf("%s/wyu", tmpDir)

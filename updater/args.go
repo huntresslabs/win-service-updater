@@ -32,6 +32,7 @@ type Args struct {
 	Logfile       string
 	Cdata         string
 	Server        string
+	WYUTestServer string
 }
 
 func ParseArgs(argsSlice []string) Args {

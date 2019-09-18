@@ -58,7 +58,7 @@ type ConfigWYS struct {
 	ServerFileSite     string
 	UpdateErrorLink    string
 	UpdateErrorText    string
-	UpdateFileSite     string
+	UpdateFileSite     []string // hosts the WYU file
 	VersionToUpdate    string
 	DummyVarLen        int
 	WysFolder          int
@@ -171,8 +171,8 @@ func ParseWYS(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
 				case DSTRING_WYS_UPDATE_ERROR_TEXT:
 					wys.UpdateErrorText = ValueToString(tlv)
 				case DSTRING_WYS_UPDATE_FILE_SITE:
-					wys.UpdateFileSite = ValueToString(tlv)
-					wys.UpdateFileSite = strings.Replace(wys.UpdateFileSite, "%urlargs%", args.Urlargs, 1)
+					site := strings.Replace(ValueToString(tlv), "%urlargs%", args.Urlargs, 1)
+					wys.UpdateFileSite = append(wys.UpdateFileSite, site)
 				case DSTRING_WYS_VERSION_TO_UPDATE:
 					wys.VersionToUpdate = ValueToString(tlv)
 				case INT_WYS_DUMMY_VAR_LEN:

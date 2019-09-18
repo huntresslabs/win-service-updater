@@ -49,7 +49,44 @@ func TearDown(f string) {
 	os.Remove(f)
 }
 
-func TestUpdateHandler_NoUpdate(t *testing.T) {
+func TestUpdateHandler(t *testing.T) {
+	wycFile := "../test_files/client.1.0.1.wyc"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	// wys server
+	tsWYU := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wyuFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYU.Close()
+
+	var args Args
+	args.Cdata = wycFile
+	args.Server = tsWYS.URL
+	args.WYUTestServer = tsWYU.URL
+	args.Outputinfo = true
+	args.OutputinfoLog = SetupTmpLog()
+	defer TearDown((args.OutputinfoLog))
+
+	exitCode, err := UpdateHandler(args)
+	assert.Equal(t, exitCode, EXIT_NO_UPDATE)
+	assert.Nil(t, err)
+	assert.True(t, fileExists(args.OutputinfoLog))
+}
+
+func TestCheckUpdateHandler_NoUpdate(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -69,12 +106,12 @@ func TestUpdateHandler_NoUpdate(t *testing.T) {
 	args.OutputinfoLog = SetupTmpLog()
 	defer TearDown((args.OutputinfoLog))
 
-	exitCode := UpdateHandler(args)
+	exitCode := CheckUpdateHandler(args)
 	assert.Equal(t, exitCode, EXIT_NO_UPDATE)
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestUpdateHandler_ErrorBadWYCFile(t *testing.T) {
+func TestCheckUpdateHandler_ErrorBadWYCFile(t *testing.T) {
 	wycFile := "../test_files/foo"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -94,12 +131,12 @@ func TestUpdateHandler_ErrorBadWYCFile(t *testing.T) {
 	args.OutputinfoLog = SetupTmpLog()
 	defer TearDown((args.OutputinfoLog))
 
-	exitCode := UpdateHandler(args)
+	exitCode := CheckUpdateHandler(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestUpdateHandler_ErrorHTTP(t *testing.T) {
+func TestCheckUpdateHandler_ErrorHTTP(t *testing.T) {
 	// wycFile := "../test_files/client.1.0.1.wyc"
 	// wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -107,12 +144,12 @@ func TestUpdateHandler_ErrorHTTP(t *testing.T) {
 	args.OutputinfoLog = SetupTmpLog()
 	defer TearDown((args.OutputinfoLog))
 
-	exitCode := UpdateHandler(args)
+	exitCode := CheckUpdateHandler(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
 	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
-func TestUpdateHandler_ErrorBadWYSFile(t *testing.T) {
+func TestCheckUpdateHandler_ErrorBadWYSFile(t *testing.T) {
 	wycFile := "../test_files/client.1.0.1.wyc"
 
 	// wys server
@@ -128,7 +165,7 @@ func TestUpdateHandler_ErrorBadWYSFile(t *testing.T) {
 	args.OutputinfoLog = SetupTmpLog()
 	defer TearDown((args.OutputinfoLog))
 
-	exitCode := UpdateHandler(args)
+	exitCode := CheckUpdateHandler(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
 	assert.True(t, fileExists(args.OutputinfoLog))
 }

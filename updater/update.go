@@ -171,6 +171,10 @@ func MoveFile(file string, dstDir string) error {
 }
 
 func CopyFile(src, dst string) (int64, error) {
+	if !fileExists(src) {
+		return 0, nil
+	}
+
 	// dst := filepath.Join(dstDir, filepath.Base(src))
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {

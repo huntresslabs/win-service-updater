@@ -21,12 +21,13 @@ func DownloadFile(url string, localpath string) error {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: TRUE_IF_GO_TEST}
 	resp, err := http.Get(url)
 	if nil != err {
+		err = fmt.Errorf("http get error %s; %w", url, err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("Error downloading file, HTTP status = %d", resp.StatusCode)
+		err = fmt.Errorf("error downloading file from %s; http status = %d", url, resp.StatusCode)
 		return err
 	}
 

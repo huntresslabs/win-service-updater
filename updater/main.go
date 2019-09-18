@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,10 +20,100 @@ type UpdateInfoInterface interface {
 
 func Handler() {
 	args := ParseArgs(os.Args)
-	os.Exit(UpdateHandler(args))
+	os.Exit(CheckUpdateHandler(args))
 }
 
-func UpdateHandler(args Args) int {
+func UpdateHandler(args Args) (int, error) {
+	tmpDir, instDir := Setup()
+	defer os.RemoveAll(tmpDir)
+	defer os.RemoveAll(instDir)
+
+	iuc, err := ParseWYC(args.Cdata)
+	if nil != err {
+		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
+		return EXIT_ERROR, err
+	}
+
+	fp := fmt.Sprintf("%s/wys", tmpDir)
+	urls := GetWYSURLs(iuc, args)
+	err = DownloadFile(urls[0], fp)
+	if nil != err {
+		err = fmt.Errorf("download error; %w", err)
+		return EXIT_ERROR, err
+	}
+
+	wys, err := ParseWYS(fp, args)
+	if nil != err {
+		err = fmt.Errorf("error reading wys file (%s); %w", fp, err)
+		return EXIT_ERROR, err
+	}
+
+	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
+	// fmt.Println("new ", wys.VersionToUpdate)
+
+	// download wyu
+	fp = fmt.Sprintf("%s/wyu", tmpDir)
+	urls = GetWYUURLs(wys, args)
+	err = DownloadFile(urls[0], fp)
+	if nil != err {
+		err = fmt.Errorf("error download update archive; %w", err)
+		return EXIT_ERROR, err
+	}
+
+	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
+	var rsa rsa.PublicKey
+	rsa.N = key.Modulus
+	rsa.E = key.Exponent
+
+	sha1hash, err := Sha1Hash(fp)
+	if nil != err {
+		err = fmt.Errorf("error hashing %s; %w", fp, err)
+		return EXIT_ERROR, err
+	}
+
+	// validated
+	err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
+	if nil != err {
+		err = fmt.Errorf("error verifying %s; %w", fp, err)
+		return EXIT_ERROR, err
+	}
+
+	// adler32
+	if wys.UpdateFileAdler32 != 0 {
+		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, fp)
+		if v != true {
+			return EXIT_ERROR, err
+		}
+	}
+
+	// extract wyu to tmpDir
+	_, files, err := Unzip(fp, tmpDir)
+	if nil != err {
+		err = fmt.Errorf("error unzipping %s; %w", fp, err)
+		return EXIT_ERROR, err
+	}
+
+	udt, updates, err := GetUpdateDetails(files)
+	if nil != err {
+		return EXIT_ERROR, err
+	}
+
+	backupDir, err := BackupFiles(updates, instDir)
+	if nil != err {
+		return EXIT_ERROR, err
+	}
+
+	err = InstallUpdate(udt, updates, instDir)
+	if nil != err {
+		// TODO start services
+		RollbackFiles(backupDir, instDir)
+		return EXIT_ERROR, err
+	} else {
+		return 0, nil
+	}
+}
+
+func CheckUpdateHandler(args Args) int {
 	rc, err := IsUpdateAvailable(args)
 	if rc == EXIT_ERROR && nil != err {
 		LogErrorMsg(args, err.Error())
