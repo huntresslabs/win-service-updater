@@ -10,11 +10,13 @@ import (
 	"strings"
 )
 
+// GetExeDir returns the directory name of the executable
 func GetExeDir() string {
 	exe, _ := os.Executable()
 	return filepath.Dir(exe)
 }
 
+// Sha1Hash returns the SHA1 hash as []byte
 func Sha1Hash(filePath string) ([]byte, error) {
 	// Open the passed argument and check for any error
 	file, err := os.Open(filePath)
@@ -46,7 +48,7 @@ func findTempDir() (tempDir string) {
 			fmt.Println("No temp directory")
 			os.Exit(1)
 		}
-		tempDir = fmt.Sprintf("%s\\temp", windir)
+		tempDir = filepath.Join(windir, "temp")
 	}
 	return tempDir
 }

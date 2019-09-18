@@ -39,9 +39,11 @@ func TearDown(f string) {
 }
 
 func TestUpdateHandler(t *testing.T) {
+	t.Fatal("fix")
+
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1.wyu"
+	wyuFile := "../test_files/widgetX.1.0.1_noservices.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

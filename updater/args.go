@@ -1,6 +1,7 @@
 package updater
 
 import (
+	"path/filepath"
 	"strings"
 )
 
@@ -35,11 +36,12 @@ type Args struct {
 	WYUTestServer string
 }
 
-func ParseArgs(argsSlice []string) Args {
-	var args Args
+// ParseArgs returns a struct with the parsed command-line arguments
+func ParseArgs(argsSlice []string) (args Args) {
+	// TODO return error
 
 	// default to client.wyc
-	args.Cdata = "client.wyc"
+	args.Cdata = filepath.Join(GetExeDir(), "client.wyc")
 
 	for _, arg := range argsSlice {
 		larg := strings.ToLower(arg)

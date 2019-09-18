@@ -294,6 +294,8 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	backupDir, err := BackupFiles(updates, instDir)
 	assert.Nil(t, err)
 
+	udt.ServiceToStopBeforeUpdate = []TLV{}
+	udt.ServiceToStartAfterUpdate = []TLV{}
 	err = InstallUpdate(udt, updates, instDir)
 	assert.Nil(t, err)
 
