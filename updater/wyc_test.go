@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -86,7 +87,7 @@ func TestWYC_WriteIUC(t *testing.T) {
 	_, files, err := Unzip(origClientWYC, tmpDir)
 	for _, f := range files {
 		// fmt.Println(f)
-		if path.Base(f) == IUCLIENT_IUC {
+		if filepath.Base(f) == IUCLIENT_IUC {
 			origHash, err := Sha256Hash(f)
 			assert.Nil(t, err)
 			assert.Equal(t, origHash, newHash)

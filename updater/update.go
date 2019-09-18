@@ -77,7 +77,7 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 	udtFound := false
 
 	for _, f := range extractedFiles {
-		if path.Base(f) == "updtdetails.udt" {
+		if filepath.Base(f) == "updtdetails.udt" {
 			udt, err = ParseUDT(f)
 			if err != nil {
 				return ConfigUDT{}, updates, err
@@ -107,8 +107,8 @@ func BackupFiles(updates []string, srcDir string) (backupDir string, err error) 
 
 	// backup the files we are about to update
 	for _, f := range updates {
-		orig := path.Join(srcDir, path.Base(f))
-		back := path.Join(backupDir, path.Base(f))
+		orig := path.Join(srcDir, filepath.Base(f))
+		back := path.Join(backupDir, filepath.Base(f))
 		// fmt.Println("orig", orig)
 		// fmt.Println("back", back)
 		_, err = CopyFile(orig, back)
