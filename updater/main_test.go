@@ -26,17 +26,6 @@ type FakeUpdateInfoer struct {
 // 	return iuc, err
 // }
 
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	if !os.IsNotExist(err) {
-		//file exists
-		return true
-	}
-
-	// no such file or directory
-	return false
-}
-
 func SetupTmpLog() string {
 	tmpFile, err := ioutil.TempDir("", "prefix")
 	if err != nil {

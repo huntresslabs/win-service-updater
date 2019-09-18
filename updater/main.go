@@ -18,15 +18,33 @@ type UpdateInfoInterface interface {
 	ParseWYC(string) (ConfigIUC, error)
 }
 
-func Handler() {
+// rc, _ := try(WYUPDATE_EXE, "/quickcheck", "/justcheck", "/noerr",
+// 	fmt.Sprintf("-urlargs=%s", AUTH), fmt.Sprintf("/outputinfo=%s", CHECK_LOG))
+
+// wyupdateArgs := fmt.Sprintf("/fromservice -logfile=\"%s\" -urlargs=%s",
+// 	WYUPDATE_LOG, AUTH)
+
+func Handler() int {
 	args := ParseArgs(os.Args)
-	os.Exit(CheckUpdateHandler(args))
+	if args.Quickcheck && args.Justcheck {
+		return CheckUpdateHandler(args)
+	}
+
+	if args.Fromservice {
+		rc, err := UpdateHandler((args))
+		if rc == EXIT_ERROR && nil != err {
+			LogErrorMsg(args, err.Error())
+			LogOutputInfoMsg(args, err.Error())
+		}
+	}
+
+	return EXIT_ERROR
 }
 
 func UpdateHandler(args Args) (int, error) {
-	tmpDir, instDir := Setup()
+	tmpDir := findTempDir()
+	instDir := GetExeDir()
 	defer os.RemoveAll(tmpDir)
-	defer os.RemoveAll(instDir)
 
 	iuc, err := ParseWYC(args.Cdata)
 	if nil != err {
@@ -115,7 +133,7 @@ func UpdateHandler(args Args) (int, error) {
 
 func CheckUpdateHandler(args Args) int {
 	rc, err := IsUpdateAvailable(args)
-	if rc == EXIT_ERROR && nil != err {
+	if nil != err {
 		LogErrorMsg(args, err.Error())
 		LogOutputInfoMsg(args, err.Error())
 	}
@@ -147,9 +165,8 @@ func IsUpdateAvailable(args Args) (int, error) {
 		return EXIT_ERROR, err
 	}
 
-	tmpDir, instDir := Setup()
+	tmpDir := findTempDir()
 	defer os.RemoveAll(tmpDir)
-	defer os.RemoveAll(instDir)
 
 	wysTmpFile := path.Join(tmpDir, "wysTemp")
 	urls := GetWYSURLs(iuc, args)
@@ -170,13 +187,16 @@ func IsUpdateAvailable(args Args) (int, error) {
 	switch rc {
 	case A_LESS_THAN_B:
 		// need update
-		return EXIT_UPDATE_AVALIABLE, nil
+		err = fmt.Errorf(wys.VersionToUpdate)
+		return EXIT_UPDATE_AVALIABLE, err
 	case A_EQUAL_TO_B:
 		// no update
-		return EXIT_NO_UPDATE, nil
+		err = fmt.Errorf(wys.VersionToUpdate)
+		return EXIT_NO_UPDATE, err
 	case A_GREATER_THAN_B:
 		// no update
-		return EXIT_NO_UPDATE, nil
+		err = fmt.Errorf(string(iuc.IucInstalledVersion.Value))
+		return EXIT_NO_UPDATE, err
 	default:
 		// unknown case
 		return EXIT_ERROR, fmt.Errorf("unknown case")

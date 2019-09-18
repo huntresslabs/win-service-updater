@@ -39,6 +39,17 @@ func convertVerToNum(ver string) int {
 	return num
 }
 
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if !os.IsNotExist(err) {
+		//file exists
+		return true
+	}
+
+	// no such file or directory
+	return false
+}
+
 // CompareVersions compares two versions and returns an integer that indicates
 // their relationship in the sort order.
 // Return a negative number if versionA is less than versionB, 0 if they're
@@ -135,9 +146,10 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
 	// TODO call actual function
-	// for _, s := range udt.ServiceToStopBeforeUpdate {
-	// fmt.Printf("Stopping %s\n", ValueToString(&s))
-	// }
+	for _, s := range udt.ServiceToStopBeforeUpdate {
+		// fmt.Printf("Stopping %s\n", ValueToString(&s))
+		StopService(ValueToString(&s))
+	}
 
 	for _, f := range srcFiles {
 		// fmt.Printf("Moving %s\n", f)
@@ -149,9 +161,10 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 
 	// start services
 	// TODO call actual function
-	// for _, s := range udt.ServiceToStartAfterUpdate {
-	// 	fmt.Printf("Starting %s\n", ValueToString(&s))
-	// }
+	for _, s := range udt.ServiceToStartAfterUpdate {
+		// fmt.Printf("Starting %s\n", ValueToString(&s))
+		StartService(ValueToString(&s))
+	}
 
 	return nil
 }

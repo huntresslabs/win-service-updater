@@ -73,7 +73,7 @@ func StartService(serviceName string) error {
 	}
 
 	if status.State != svc.Running {
-		err = fmt.Errorf("'%s' did not start; status: %+v", serviceName, status))
+		err = fmt.Errorf("'%s' did not start; status: %+v", serviceName, status)
 		return err
 	}
 
@@ -113,7 +113,7 @@ func StopService(serviceName string) error {
 	}
 
 	if status.State != svc.Stopped {
-		err = fmt.Errorf("'%s' did not stop; status: %+v", serviceName, status))
+		err = fmt.Errorf("'%s' did not stop; status: %+v", serviceName, status)
 		return err
 	}
 
