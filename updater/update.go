@@ -145,10 +145,12 @@ func RollbackFiles(backupDir string, dstDir string) (err error) {
 
 func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	// stop services
-	// TODO call actual function
 	for _, s := range udt.ServiceToStopBeforeUpdate {
 		// fmt.Printf("Stopping %s\n", ValueToString(&s))
-		StopService(ValueToString(&s))
+		e := StopService(ValueToString(&s))
+		if nil != e {
+			return e
+		}
 	}
 
 	for _, f := range srcFiles {
@@ -160,10 +162,12 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	}
 
 	// start services
-	// TODO call actual function
 	for _, s := range udt.ServiceToStartAfterUpdate {
 		// fmt.Printf("Starting %s\n", ValueToString(&s))
-		StartService(ValueToString(&s))
+		e := StartService(ValueToString(&s))
+		if nil != e {
+			return e
+		}
 	}
 
 	return nil

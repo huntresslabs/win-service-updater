@@ -42,38 +42,23 @@ func IsServiceRunning(serviceName string) (bool, error) {
 
 // StartService starts a service
 func StartService(serviceName string) error {
-	// logger.Debug(fmt.Sprintf("Stopping the '%s' service", serviceName))
-
 	// open service manager, requires admin
 	m, err := mgr.Connect()
-	if nil != err {
+	if err != nil {
 		return err
 	}
 	defer m.Disconnect()
 
 	// open the service
 	s, err := m.OpenService(serviceName)
-	if nil != err {
+	if err != nil {
 		return err
 	}
 	defer s.Close()
 
-	// stop the service
-	_, err = s.Control(svc.Stop)
-	if nil != err {
-		return err
-	}
-	// allow time to stop
-	time.Sleep(5 * time.Second)
-
-	status, err := s.Query()
-	if nil != err {
-		// will return an error if the service is not running so just return err
-		return err
-	}
-
-	if status.State != svc.Running {
-		err = fmt.Errorf("'%s' did not start; status: %+v", serviceName, status)
+	// start the service
+	err = s.Start()
+	if err != nil {
 		return err
 	}
 
