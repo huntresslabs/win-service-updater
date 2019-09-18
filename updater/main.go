@@ -2,7 +2,9 @@ package updater
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 )
 
 const (
@@ -15,69 +17,77 @@ type UpdateInfoInterface interface {
 	ParseWYC(string) (ConfigIUC, error)
 }
 
-func UpdateHandler() {
+func Handler() {
 	args := ParseArgs(os.Args)
-
-	uier := UpdateInfoer{}
-
-	exitCode := IsUpdateAvailable(uier, "./test_files2/client1.0.0.wyc", args)
-
-	os.Exit(exitCode)
-	// if exitCode == EXIT_NO_UPDATE {
-	// 	os.Exit(0)
-	// } else if exitCode == EXIT_ERROR {
-	// 	os.Exit(1)
-	// } else if exitCode == EXIT_UPDATE_AVALIABLE {
-	// 	os.Exit(2)
-	// }
-
+	os.Exit(UpdateHandler(args))
 }
 
-func IsUpdateAvailable(uii UpdateInfoInterface, wycFile string, args Args) int {
-	// read WYC
-	iuc, err := uii.ParseWYC(wycFile)
-	if args.Noerr && nil != err {
-		if len(args.Logfile) > 0 {
-			// log error
-		}
-		return 1
+func UpdateHandler(args Args) int {
+	rc, err := IsUpdateAvailable(args)
+	if rc == EXIT_ERROR && nil != err {
+		LogErrorMsg(args, err.Error())
+		LogOutputInfoMsg(args, err.Error())
 	}
+	return rc
+}
 
-	// This is test code to test if I can update the URL value from an interface
-	if string(iuc.IucServerFileSite[0].Value) == "TEST_URL" {
-		return 3
-	} else {
-		return 1
-	} // end test code
+func LogErrorMsg(args Args, msg string) {
+	if len(args.Logfile) > 0 {
+		dat := []byte(msg)
+		ioutil.WriteFile(args.Logfile, dat, 0644)
+	}
+}
+
+func LogOutputInfoMsg(args Args, msg string) {
+	if args.Outputinfo {
+		if len(args.OutputinfoLog) > 0 {
+			dat := []byte(msg)
+			ioutil.WriteFile(args.OutputinfoLog, dat, 0644)
+		} else {
+			fmt.Println(msg)
+		}
+	}
+}
+
+func IsUpdateAvailable(args Args) (int, error) {
+	// read WYC
+	iuc, err := ParseWYC(args.Cdata)
+	if nil != err {
+		return EXIT_ERROR, err
+	}
 
 	tmpDir, instDir := Setup()
 	defer os.RemoveAll(tmpDir)
 	defer os.RemoveAll(instDir)
 
-	wysTmpFile := fmt.Sprintf("%s\\wys", tmpDir)
-	// download WYS and extract
-	err = DownloadFile(string(iuc.IucServerFileSite[0].Value), wysTmpFile)
+	wysTmpFile := path.Join(tmpDir, "wysTemp")
+	urls := GetWYSURLs(iuc, args)
+
+	// TODO loop through URLs here or in DownloadFile()
+	err = DownloadFile(urls[0], wysTmpFile)
+	if nil != err {
+		return EXIT_ERROR, err
+	}
 
 	wys, err := ParseWYS(wysTmpFile, args)
-	if args.Noerr && nil != err {
-		if len(args.Logfile) > 0 {
-			// log error
-		}
-		return 1
+	if nil != err {
+		return EXIT_ERROR, err
 	}
-	fmt.Printf("%+v\n", wys)
 
 	// compare versions
 	rc := CompareVersions(string(iuc.IucInstalledVersion.Value), wys.VersionToUpdate)
-	// need update
-	if rc == A_LESS_THAN_B {
-		// Log new version to args.Outputinfo
-		return 2
+	switch rc {
+	case A_LESS_THAN_B:
+		// need update
+		return EXIT_UPDATE_AVALIABLE, nil
+	case A_EQUAL_TO_B:
+		// no update
+		return EXIT_NO_UPDATE, nil
+	case A_GREATER_THAN_B:
+		// no update
+		return EXIT_NO_UPDATE, nil
+	default:
+		// unknown case
+		return EXIT_ERROR, fmt.Errorf("unknown case")
 	}
-	// no update
-	return 0
-}
-
-func Update() {
-
 }

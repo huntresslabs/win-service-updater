@@ -77,8 +77,6 @@ type ConfigIUC struct {
 	IucPublicKey            TLV
 }
 
-type UpdateInfoer struct{}
-
 func ReadIUCTLV(r io.Reader) *TLV {
 	var record TLV
 
@@ -140,6 +138,12 @@ func ReadIUCTLV(r io.Reader) *TLV {
 
 // GetWYSURLs returns the ServerFileSite(s) listed in the WYC file.
 func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
+	// WYS URL specified on the command line
+	if len(args.Server) > 0 {
+		urls = append(urls, args.Server)
+		return urls
+	}
+
 	for _, s := range config.IucServerFileSite {
 		u := strings.Replace(string(s.Value), "%urlargs%", args.Urlargs, 1)
 		urls = append(urls, u)
@@ -147,7 +151,7 @@ func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
 	return urls
 }
 
-func (uier UpdateInfoer) ParseWYC(compressedWYC string) (ConfigIUC, error) {
+func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 	var config ConfigIUC
 
 	zipr, err := zip.OpenReader(compressedWYC)

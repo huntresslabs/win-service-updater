@@ -16,6 +16,11 @@ import (
 
 // https://wyday.com/wybuild/help/wyupdate-commandline.php
 
+// /outputinfo[="<filename>"]
+// When used together with "/quickcheck /justcheck", "/quickcheck /noerr", or
+// even "/quickcheck /justcheck /noerr" arguments wyUpdate will output the
+// update information or error to the STDOUT or to a file. For example:
+
 type Args struct {
 	Quickcheck    bool
 	Justcheck     bool
@@ -26,10 +31,15 @@ type Args struct {
 	OutputinfoLog string
 	Logfile       string
 	Cdata         string
+	Server        string
 }
 
 func ParseArgs(argsSlice []string) Args {
 	var args Args
+
+	// default to client.wyc
+	args.Cdata = "client.wyc"
+
 	for _, arg := range argsSlice {
 		larg := strings.ToLower(arg)
 
@@ -57,6 +67,9 @@ func ParseArgs(argsSlice []string) Args {
 		case strings.HasPrefix(larg, "-cdata="):
 			fields := strings.Split(larg, "=")
 			args.Cdata = fields[1]
+		case strings.HasPrefix(larg, "-server="):
+			fields := strings.Split(larg, "=")
+			args.Server = fields[1]
 		}
 	}
 	return args

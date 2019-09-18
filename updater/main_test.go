@@ -1,6 +1,11 @@
 package updater
 
 import (
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,77 +16,119 @@ type FakeUpdateInfoer struct {
 	Err error
 }
 
-func (f FakeUpdateInfoer) ParseWYC(wycFile string) (iuc ConfigIUC, err error) {
-	uier := UpdateInfoer{}
-
-	iuc, err = uier.ParseWYC(wycFile)
-
-	iuc.IucServerFileSite[0].Value = []byte(f.URL)
-
-	return iuc, err
-}
-
-func TestIsUpdateAvailable_ChangeURL(t *testing.T) {
-	var args Args
-	wycFile := "../test_files/client.1.0.1.wyc"
-
-	f := FakeUpdateInfoer{
-		URL: "TEST_URL",
-		Err: nil,
-	}
-
-	exitCode := IsUpdateAvailable(f, wycFile, args)
-	assert.Equal(t, exitCode, 3)
-}
-
-// func TestIsUpdateAvailable_Error(t *testing.T) {
-// 	var args Args
-// 	args.Noerr = true
-
+// func (f FakeUpdateInfoer) ParseWYC(wycFile string) (iuc ConfigIUC, err error) {
 // 	uier := UpdateInfoer{}
 
-// 	exitCode := IsUpdateAvailable(uier, "foo", args)
-// 	assert.Equal(t, EXIT_ERROR, exitCode)
+// 	iuc, err = uier.ParseWYC(wycFile)
+
+// 	iuc.IucServerFileSite[0].Value = []byte(f.URL)
+
+// 	return iuc, err
 // }
 
-// func TestIsUpdateAvailable_NoUpdate(t *testing.T) {
-// 	wycFile := "../test_files/client.1.0.1.wyc"
-// 	wysFile := "../test_files/widgetX.1.0.1.wys"
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	if !os.IsNotExist(err) {
+		//file exists
+		return true
+	}
 
-// 	tmpDir, instDir := Setup()
-// 	defer os.RemoveAll(tmpDir)
-// 	defer os.RemoveAll(instDir)
+	// no such file or directory
+	return false
+}
 
-// 	// wys server
-// 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(http.StatusOK)
-// 		dat, err := ioutil.ReadFile(wysFile)
-// 		assert.Nil(t, err)
-// 		w.Write(dat)
-// 	}))
-// 	defer tsWYS.Close()
+func SetupTmpLog() string {
+	tmpFile, err := ioutil.TempDir("", "prefix")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tmpFile
+}
 
-// 	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
-// 	args := ParseArgs(argv)
+func TearDown(f string) {
+	os.Remove(f)
+}
 
-// 	exitCode := IsUpdateAvailable(wycFile, args)
-// 	assert.Equal(t, EXIT_NO_UPDATE, exitCode)
-// }
+func TestUpdateHandler_NoUpdate(t *testing.T) {
+	wycFile := "../test_files/client.1.0.1.wyc"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
 
-// func TestIsUpdateAvailable_UpdateAvaliable(t *testing.T) {
-// 	var args Args
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
 
-// 	wysFile := "../test_files2/client1.0.1.wyc"
+	var args Args
+	args.Cdata = wycFile
+	args.Server = tsWYS.URL
+	args.Outputinfo = true
+	args.OutputinfoLog = SetupTmpLog()
+	defer TearDown((args.OutputinfoLog))
 
-// 	// test server
-// 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		w.WriteHeader(http.StatusOK)
-// 		dat, err := ioutil.ReadFile(wysFile)
-// 		assert.Nil(t, err)
-// 		w.Write(dat)
-// 	}))
-// 	defer tsWYS.Close()
+	exitCode := UpdateHandler(args)
+	assert.Equal(t, exitCode, EXIT_NO_UPDATE)
+	assert.True(t, fileExists(args.OutputinfoLog))
+}
 
-// 	exitCode := IsUpdateAvailable("../test_files2/client1.0.0.wyc", args)
-// 	assert.Equal(t, EXIT_UPDATE_AVALIABLE, exitCode)
-// }
+func TestUpdateHandler_ErrorBadWYCFile(t *testing.T) {
+	wycFile := "../test_files/foo"
+	wysFile := "../test_files/widgetX.1.0.1.wys"
+
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		dat, err := ioutil.ReadFile(wysFile)
+		assert.Nil(t, err)
+		w.Write(dat)
+	}))
+	defer tsWYS.Close()
+
+	var args Args
+	args.Cdata = wycFile
+	args.Server = tsWYS.URL
+	args.Outputinfo = true
+	args.OutputinfoLog = SetupTmpLog()
+	defer TearDown((args.OutputinfoLog))
+
+	exitCode := UpdateHandler(args)
+	assert.Equal(t, exitCode, EXIT_ERROR)
+	assert.True(t, fileExists(args.OutputinfoLog))
+}
+
+func TestUpdateHandler_ErrorHTTP(t *testing.T) {
+	// wycFile := "../test_files/client.1.0.1.wyc"
+	// wysFile := "../test_files/widgetX.1.0.1.wys"
+
+	var args Args
+	args.OutputinfoLog = SetupTmpLog()
+	defer TearDown((args.OutputinfoLog))
+
+	exitCode := UpdateHandler(args)
+	assert.Equal(t, exitCode, EXIT_ERROR)
+	assert.True(t, fileExists(args.OutputinfoLog))
+}
+
+func TestUpdateHandler_ErrorBadWYSFile(t *testing.T) {
+	wycFile := "../test_files/client.1.0.1.wyc"
+
+	// wys server
+	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("not a wys file"))
+	}))
+	defer tsWYS.Close()
+
+	var args Args
+	args.Cdata = wycFile
+	args.Server = tsWYS.URL
+	args.OutputinfoLog = SetupTmpLog()
+	defer TearDown((args.OutputinfoLog))
+
+	exitCode := UpdateHandler(args)
+	assert.Equal(t, exitCode, EXIT_ERROR)
+	assert.True(t, fileExists(args.OutputinfoLog))
+}
