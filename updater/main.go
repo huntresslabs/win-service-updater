@@ -14,10 +14,6 @@ const (
 	EXIT_UPDATE_AVALIABLE = 2
 )
 
-type UpdateInfoInterface interface {
-	ParseWYC(string) (ConfigIUC, error)
-}
-
 // rc, _ := try(WYUPDATE_EXE, "/quickcheck", "/justcheck", "/noerr",
 // 	fmt.Sprintf("-urlargs=%s", AUTH), fmt.Sprintf("/outputinfo=%s", CHECK_LOG))
 
@@ -63,7 +59,7 @@ func UpdateHandler(args Args) (int, error) {
 	urls := GetWYSURLs(iuc, args)
 	err = DownloadFile(urls[0], fp)
 	if nil != err {
-		err = fmt.Errorf("download error; %w", err)
+		err = fmt.Errorf("error downloading wys file; %w", err)
 		return EXIT_ERROR, err
 	}
 
@@ -81,7 +77,7 @@ func UpdateHandler(args Args) (int, error) {
 	urls = GetWYUURLs(wys, args)
 	err = DownloadFile(urls[0], fp)
 	if nil != err {
-		err = fmt.Errorf("error download update archive; %w", err)
+		err = fmt.Errorf("error downloading update archive; %w", err)
 		return EXIT_ERROR, err
 	}
 
@@ -160,6 +156,7 @@ func IsUpdateAvailable(args Args) (int, error) {
 	// read WYC
 	iuc, err := ParseWYC(args.Cdata)
 	if nil != err {
+		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
 		return EXIT_ERROR, err
 	}
 
@@ -172,11 +169,13 @@ func IsUpdateAvailable(args Args) (int, error) {
 	// TODO loop through URLs here or in DownloadFile()
 	err = DownloadFile(urls[0], wysTmpFile)
 	if nil != err {
+		err = fmt.Errorf("error downloading wys file; %w", err)
 		return EXIT_ERROR, err
 	}
 
 	wys, err := ParseWYS(wysTmpFile, args)
 	if nil != err {
+		err = fmt.Errorf("error reading %s; %w", wysTmpFile, err)
 		return EXIT_ERROR, err
 	}
 
