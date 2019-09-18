@@ -241,7 +241,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	// fixup URL adding port from test server
 	turi := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
-	fp := fmt.Sprintf("%s/wys", tmpDir)
+	fp := fmt.Sprintf("%s\\wys", tmpDir)
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 
@@ -254,7 +254,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	assert.Equal(t, A_LESS_THAN_B, rc)
 
 	// download wyu
-	fp = fmt.Sprintf("%s/wyu", tmpDir)
+	fp = fmt.Sprintf("%s\\wyu", tmpDir)
 	err = DownloadFile(tsWYU.URL, fp)
 	assert.Nil(t, err)
 
