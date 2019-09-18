@@ -1,9 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/huntresslabs/win-service-updater/updater"
 )
 
 func main() {
-	updater.Handler()
+	os.Exit(updater.Handler())
 }

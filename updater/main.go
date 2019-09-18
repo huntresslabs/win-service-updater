@@ -27,15 +27,22 @@ type UpdateInfoInterface interface {
 func Handler() int {
 	args := ParseArgs(os.Args)
 	if args.Quickcheck && args.Justcheck {
-		return CheckUpdateHandler(args)
+		rc, err := IsUpdateAvailable(args)
+		if nil != err {
+			err = fmt.Errorf("exit code=%d; %s", rc, err)
+			LogErrorMsg(args, err.Error())
+			LogOutputInfoMsg(args, err.Error())
+		}
+		return rc
 	}
 
 	if args.Fromservice {
 		rc, err := UpdateHandler((args))
-		if rc == EXIT_ERROR && nil != err {
+		if nil != err {
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
 		}
+		return rc
 	}
 
 	return EXIT_ERROR
@@ -129,15 +136,6 @@ func UpdateHandler(args Args) (int, error) {
 	} else {
 		return 0, nil
 	}
-}
-
-func CheckUpdateHandler(args Args) int {
-	rc, err := IsUpdateAvailable(args)
-	if nil != err {
-		LogErrorMsg(args, err.Error())
-		LogOutputInfoMsg(args, err.Error())
-	}
-	return rc
 }
 
 func LogErrorMsg(args Args, msg string) {
