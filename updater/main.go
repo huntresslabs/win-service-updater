@@ -3,12 +3,12 @@ package updater
 import (
 	"crypto/rsa"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 )
 
 const (
+	EXIT_SUCCESS          = 0
 	EXIT_NO_UPDATE        = 0
 	EXIT_ERROR            = 1
 	EXIT_UPDATE_AVALIABLE = 2
@@ -22,16 +22,18 @@ const (
 
 func Handler() int {
 	args := ParseArgs(os.Args)
+
+	// check for updates
 	if args.Quickcheck && args.Justcheck {
 		rc, err := IsUpdateAvailable(args)
 		if nil != err {
-			err = fmt.Errorf("exit code=%d; %s", rc, err)
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
 		}
 		return rc
 	}
 
+	// update
 	if args.Fromservice {
 		rc, err := UpdateHandler((args))
 		if nil != err {
@@ -49,12 +51,14 @@ func UpdateHandler(args Args) (int, error) {
 	instDir := GetExeDir()
 	defer os.RemoveAll(tmpDir)
 
+	// parse the WYC file for get update site, installed version, etc.
 	iuc, err := ParseWYC(args.Cdata)
 	if nil != err {
 		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
 		return EXIT_ERROR, err
 	}
 
+	// download the wys file (contains details about the availiable update)
 	fp := fmt.Sprintf("%s/wys", tmpDir)
 	urls := GetWYSURLs(iuc, args)
 	err = DownloadFile(urls[0], fp)
@@ -63,6 +67,7 @@ func UpdateHandler(args Args) (int, error) {
 		return EXIT_ERROR, err
 	}
 
+	// parse the WYS file (contains the version number of the update and the link to the update)
 	wys, err := ParseWYS(fp, args)
 	if nil != err {
 		err = fmt.Errorf("error reading wys file (%s); %w", fp, err)
@@ -72,7 +77,7 @@ func UpdateHandler(args Args) (int, error) {
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
 	// fmt.Println("new ", wys.VersionToUpdate)
 
-	// download wyu
+	// download WYU (this is the archive with the updated files)
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
 	urls = GetWYUURLs(wys, args)
 	err = DownloadFile(urls[0], fp)
@@ -81,25 +86,31 @@ func UpdateHandler(args Args) (int, error) {
 		return EXIT_ERROR, err
 	}
 
+	// TODO
+	// - if a PublicKey was specified in the WYC, we need to validate the WYU file
+	// if PublicKey was specified and there is no signed hash (ConfigWYS.FileSha1) we need to fail
+
+	// convert the public key from the WYC file to an rsa.PublicKey
 	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
 	var rsa rsa.PublicKey
 	rsa.N = key.Modulus
 	rsa.E = key.Exponent
 
+	// hash the downloaded WYU file
 	sha1hash, err := Sha1Hash(fp)
 	if nil != err {
 		err = fmt.Errorf("error hashing %s; %w", fp, err)
 		return EXIT_ERROR, err
 	}
 
-	// validated
+	// verify the signature of the WYU file (the signed hash is included in the WYS file)
 	err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
 	if nil != err {
 		err = fmt.Errorf("error verifying %s; %w", fp, err)
 		return EXIT_ERROR, err
 	}
 
-	// adler32
+	// adler32 checksum
 	if wys.UpdateFileAdler32 != 0 {
 		v := VerifyAdler32Checksum(wys.UpdateFileAdler32, fp)
 		if v != true {
@@ -107,18 +118,22 @@ func UpdateHandler(args Args) (int, error) {
 		}
 	}
 
-	// extract wyu to tmpDir
+	// extract the WYU to tmpDir
 	_, files, err := Unzip(fp, tmpDir)
 	if nil != err {
 		err = fmt.Errorf("error unzipping %s; %w", fp, err)
 		return EXIT_ERROR, err
 	}
 
+	// get the details of the update
+	// the update "config" is "updtdetails.udt"
+	// the "files" are the updated files
 	udt, updates, err := GetUpdateDetails(files)
 	if nil != err {
 		return EXIT_ERROR, err
 	}
 
+	// backup the existing files that will be overwritten by the update
 	backupDir, err := BackupFiles(updates, instDir)
 	if nil != err {
 		return EXIT_ERROR, err
@@ -126,29 +141,12 @@ func UpdateHandler(args Args) (int, error) {
 
 	err = InstallUpdate(udt, updates, instDir)
 	if nil != err {
-		// TODO start services
+		err = fmt.Errorf("error applying update; %w", err)
+		// TODO start services after the rollback
 		RollbackFiles(backupDir, instDir)
 		return EXIT_ERROR, err
 	} else {
-		return 0, nil
-	}
-}
-
-func LogErrorMsg(args Args, msg string) {
-	if len(args.Logfile) > 0 {
-		dat := []byte(msg)
-		ioutil.WriteFile(args.Logfile, dat, 0644)
-	}
-}
-
-func LogOutputInfoMsg(args Args, msg string) {
-	if args.Outputinfo {
-		if len(args.OutputinfoLog) > 0 {
-			dat := []byte(msg)
-			ioutil.WriteFile(args.OutputinfoLog, dat, 0644)
-		} else {
-			fmt.Println(msg)
-		}
+		return EXIT_SUCCESS, nil
 	}
 }
 

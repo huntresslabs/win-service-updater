@@ -77,6 +77,7 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 	udtFound := false
 
 	for _, f := range extractedFiles {
+		// TODO use a const for "updtdetails.udt"
 		if filepath.Base(f) == "updtdetails.udt" {
 			udt, err = ParseUDT(f)
 			if err != nil {
