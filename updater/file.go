@@ -80,7 +80,7 @@ func Unzip(srcArchive string, destDir string) (root string, filenames []string, 
 			return "", filenames, fmt.Errorf("%s: illegal file path", fpath)
 		}
 
-		err := writeCompressedFile(f, fpath)
+		err := writeDecompressedFile(f, fpath)
 		if nil != err {
 			return "", filenames, err
 		}
@@ -89,8 +89,8 @@ func Unzip(srcArchive string, destDir string) (root string, filenames []string, 
 	return "", filenames, nil
 }
 
-// writeCompressedFile writes compressed file to `fpath`
-func writeCompressedFile(f *zip.File, fpath string) error {
+// writeDecompressedFile writes (de)compressed file to `fpath`
+func writeDecompressedFile(f *zip.File, fpath string) error {
 	if f.FileInfo().IsDir() {
 		// Make Folder
 		os.MkdirAll(fpath, os.ModePerm)

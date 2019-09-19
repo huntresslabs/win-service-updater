@@ -59,6 +59,25 @@ func TestWYC(t *testing.T) {
 	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/updates/wyserver.wys?key=%urlargs%"))
 }
 
+func TestWYC_UpdateWYC(t *testing.T) {
+	origFile := "../test_files/client.1.0.0.wyc"
+
+	wyc, err := ParseWYC(origFile)
+	assert.Nil(t, err)
+
+	// TODO create a function to do this, we'll need to do this after an update
+	wyc.IucInstalledVersion.Value = []byte("1.2.3")
+	wyc.IucInstalledVersion.DataLength = uint32(len(wyc.IucInstalledVersion.Value) + 4)
+	wyc.IucInstalledVersion.Length = uint32(len(wyc.IucInstalledVersion.Value))
+
+	new, err := UpdateWYC(wyc, origFile)
+	assert.Nil(t, err)
+	fmt.Println(new)
+
+	_, err = ParseWYC(new)
+	assert.Nil(t, err)
+}
+
 func TestWYC_WriteIUC(t *testing.T) {
 	// create a new uiclient.iuc and compare it to the one in the archive
 

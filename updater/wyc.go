@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -247,6 +248,7 @@ func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 }
 
 func WriteIUC(config ConfigIUC, path string) error {
+	fmt.Printf("Writing IUC %s\n", path)
 	f, err := os.Create(path)
 	if nil != err {
 		return err
@@ -326,4 +328,85 @@ func WriteIUC(config ConfigIUC, path string) error {
 	// }
 
 	return nil
+}
+
+func UpdateWYC(config ConfigIUC, path string) (new string, err error) {
+	// Unzip the archive. We'll create an iuclient.iuc, but we need the
+	// other files.
+	tmpDir := findTempDir()
+	_, files, err := Unzip(path, tmpDir)
+	if nil != err {
+		return "", err
+	}
+
+	for _, f := range files {
+		// TODO use a const for "iuclient.iuc"
+		if filepath.Base(f) == "iuclient.iuc" {
+			// overwrite this file with new IUC
+			err := WriteIUC(config, f)
+			if nil != err {
+				return "", err
+			}
+		}
+	}
+
+	// TODO use a const for "client.wyc"
+	new = filepath.Join(tmpDir, "client.wyc")
+	err = CreateWYCArchive(new, files)
+	if nil != err {
+		return "", err
+	}
+	return new, nil
+}
+
+// CreateWYCArchive compresses files into a .wyc archive
+func CreateWYCArchive(filename string, files []string) error {
+
+	wycHandle, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer wycHandle.Close()
+
+	zipWriter := zip.NewWriter(wycHandle)
+	defer zipWriter.Close()
+
+	// Add files
+	for _, file := range files {
+		if err = AddFileToWYCArchive(zipWriter, file); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func AddFileToWYCArchive(zipWriter *zip.Writer, filename string) error {
+	fileToCompress, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer fileToCompress.Close()
+
+	// get file info for the header
+	info, err := fileToCompress.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return err
+	}
+
+	header.Method = zip.Deflate
+
+	// all files in the WYC archive are at the root (Base())
+	header.Name = filepath.Base(filename)
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(writer, fileToCompress)
+	return err
 }
