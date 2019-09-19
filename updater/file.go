@@ -5,6 +5,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,11 +46,16 @@ func findTempDir() (tempDir string) {
 	tempDir = os.Getenv("TEMP")
 	if len(tempDir) == 0 {
 		windir := os.Getenv("SystemRoot")
-		if 0 == len(windir) {
-			fmt.Println("No temp directory")
-			os.Exit(1)
+		if len(windir) > 1 {
+			tempDir = filepath.Join(windir, "temp")
+			return tempDir
+		} else {
+			tempDir, err := ioutil.TempDir("", "updater")
+			if nil != err {
+				log.Fatal(err)
+			}
+			return tempDir
 		}
-		tempDir = filepath.Join(windir, "temp")
 	}
 	return tempDir
 }
