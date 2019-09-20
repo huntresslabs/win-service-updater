@@ -129,7 +129,7 @@ func TestFunctional_SameVersion(t *testing.T) {
 	uri := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	err = DownloadFile(uri, fp)
+	err = DownloadFile([]string{uri}, fp)
 	assert.Nil(t, err)
 
 	wys, err := info.ParseWYS(fp, args)
@@ -184,7 +184,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 	turi := fixupTestURL(urls[0], tsWYS.URL)
 
 	fp := fmt.Sprintf("%s/wys", tmpDir)
-	err = DownloadFile(turi, fp)
+	err = DownloadFile([]string{turi}, fp)
 	assert.Nil(t, err)
 
 	wys, err := info.ParseWYS(fp, args)
@@ -199,7 +199,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 
 	// download wyu
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
-	err = DownloadFile(turi, fp)
+	err = DownloadFile([]string{turi}, fp)
 	assert.Nil(t, err)
 }
 
@@ -242,7 +242,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	turi := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
 
 	fp := fmt.Sprintf("%s\\wys", tmpDir)
-	err = DownloadFile(turi, fp)
+	err = DownloadFile([]string{turi}, fp)
 	assert.Nil(t, err)
 
 	wys, err := info.ParseWYS(fp, args)
@@ -255,7 +255,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 
 	// download wyu
 	fp = fmt.Sprintf("%s\\wyu", tmpDir)
-	err = DownloadFile(tsWYU.URL, fp)
+	err = DownloadFile([]string{tsWYU.URL}, fp)
 	assert.Nil(t, err)
 
 	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))

@@ -62,7 +62,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// download the wys file (contains details about the availiable update)
 	fp := fmt.Sprintf("%s/wys", tmpDir)
 	urls := GetWYSURLs(iuc, args)
-	err = DownloadFile(urls[0], fp)
+	err = DownloadFile(urls, fp)
 	if nil != err {
 		err = fmt.Errorf("error downloading wys file; %w", err)
 		return EXIT_ERROR, err
@@ -81,7 +81,7 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	// download WYU (this is the archive with the updated files)
 	fp = fmt.Sprintf("%s/wyu", tmpDir)
 	urls = GetWYUURLs(wys, args)
-	err = DownloadFile(urls[0], fp)
+	err = DownloadFile(urls, fp)
 	if nil != err {
 		err = fmt.Errorf("error downloading update archive; %w", err)
 		return EXIT_ERROR, err
@@ -177,7 +177,7 @@ func IsUpdateAvailable(infoer Infoer, args Args) (int, error) {
 	urls := GetWYSURLs(iuc, args)
 
 	// TODO loop through URLs here or in DownloadFile()
-	err = DownloadFile(urls[0], wysTmpFile)
+	err = DownloadFile(urls, wysTmpFile)
 	if nil != err {
 		err = fmt.Errorf("error downloading wys file; %w", err)
 		return EXIT_ERROR, err
