@@ -12,8 +12,8 @@ import (
 )
 
 type FakeUpdateInfoer struct {
-	URL string
-	Err error
+	Hash string
+	Err  error
 }
 
 // func (f FakeUpdateInfoer) ParseWYC(wycFile string) (iuc ConfigIUC, err error) {
@@ -26,8 +26,8 @@ type FakeUpdateInfoer struct {
 // 	return iuc, err
 // }
 
-func SetupTmpLog() string {
-	tmpFile, err := ioutil.TempDir("", "prefix")
+func SetupTmpLog() *os.File {
+	tmpFile, err := ioutil.TempFile("", "tmpLog")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,15 +35,16 @@ func SetupTmpLog() string {
 }
 
 func TearDown(f string) {
-	os.Remove(f)
+	err := os.Remove(f)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func TestUpdateHandler(t *testing.T) {
-	t.Fatal("fix")
-
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
-	wyuFile := "../test_files/widgetX.1.0.1_noservices.wyu"
+	wyuFile := "../test_files/widgetX.1.0.1.wyu"
 
 	// wys server
 	tsWYS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,13 +69,15 @@ func TestUpdateHandler(t *testing.T) {
 	args.Server = tsWYS.URL
 	args.WYUTestServer = tsWYU.URL
 	args.Outputinfo = true
-	args.OutputinfoLog = SetupTmpLog()
+	f := SetupTmpLog()
+	args.OutputinfoLog = f.Name()
 	defer TearDown(args.OutputinfoLog)
+	defer f.Close()
 
 	exitCode, err := UpdateHandler(args)
-	assert.Equal(t, exitCode, EXIT_NO_UPDATE)
+	assert.Equal(t, EXIT_NO_UPDATE, exitCode)
 	assert.Nil(t, err)
-	// assert.True(t, fileExists(args.OutputinfoLog))
+	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
 func TestIsUpdateAvailable_NoUpdate(t *testing.T) {
@@ -94,12 +97,14 @@ func TestIsUpdateAvailable_NoUpdate(t *testing.T) {
 	args.Cdata = wycFile
 	args.Server = tsWYS.URL
 	args.Outputinfo = true
-	args.OutputinfoLog = SetupTmpLog()
-	defer TearDown((args.OutputinfoLog))
+	f := SetupTmpLog()
+	args.OutputinfoLog = f.Name()
+	defer TearDown(args.OutputinfoLog)
+	defer f.Close()
 
 	exitCode, _ := IsUpdateAvailable(args)
 	assert.Equal(t, exitCode, EXIT_NO_UPDATE)
-	// assert.True(t, fileExists(args.OutputinfoLog))
+	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
 func TestIsUpdateAvailable_ErrorBadWYCFile(t *testing.T) {
@@ -119,8 +124,10 @@ func TestIsUpdateAvailable_ErrorBadWYCFile(t *testing.T) {
 	args.Cdata = wycFile
 	args.Server = tsWYS.URL
 	args.Outputinfo = true
-	args.OutputinfoLog = SetupTmpLog()
-	defer TearDown((args.OutputinfoLog))
+	f := SetupTmpLog()
+	args.OutputinfoLog = f.Name()
+	defer TearDown(args.OutputinfoLog)
+	defer f.Close()
 
 	exitCode, _ := IsUpdateAvailable(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
@@ -132,12 +139,14 @@ func TestIsUpdateAvailable_ErrorHTTP(t *testing.T) {
 	// wysFile := "../test_files/widgetX.1.0.1.wys"
 
 	var args Args
-	args.OutputinfoLog = SetupTmpLog()
-	defer TearDown((args.OutputinfoLog))
+	f := SetupTmpLog()
+	args.OutputinfoLog = f.Name()
+	defer TearDown(args.OutputinfoLog)
+	defer f.Close()
 
 	exitCode, _ := IsUpdateAvailable(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
-	// assert.True(t, fileExists(args.OutputinfoLog))
+	assert.True(t, fileExists(args.OutputinfoLog))
 }
 
 func TestIsUpdateAvailable_ErrorBadWYSFile(t *testing.T) {
@@ -153,10 +162,12 @@ func TestIsUpdateAvailable_ErrorBadWYSFile(t *testing.T) {
 	var args Args
 	args.Cdata = wycFile
 	args.Server = tsWYS.URL
-	args.OutputinfoLog = SetupTmpLog()
+	f := SetupTmpLog()
+	args.OutputinfoLog = f.Name()
 	defer TearDown(args.OutputinfoLog)
+	defer f.Close()
 
 	exitCode, _ := IsUpdateAvailable(args)
 	assert.Equal(t, exitCode, EXIT_ERROR)
-	// assert.True(t, fileExists(args.OutputinfoLog))
+	assert.True(t, fileExists(args.OutputinfoLog))
 }
