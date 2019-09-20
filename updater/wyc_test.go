@@ -53,16 +53,18 @@ func Zip(archive string, files []string) {
 }
 
 func TestWYC(t *testing.T) {
+	info := Info{}
 	origFile := "../test_files/client.1.0.0.wyc"
-	wyc, err := ParseWYC(origFile)
+	wyc, err := info.ParseWYC(origFile)
 	assert.Nil(t, err)
 	assert.Equal(t, wyc.IucServerFileSite[0].Value, []byte("http://127.0.0.1/updates/wyserver.wys?key=%urlargs%"))
 }
 
 func TestWYC_UpdateWYC(t *testing.T) {
+	info := Info{}
 	origFile := "../test_files/client.1.0.0.wyc"
 
-	wyc, err := ParseWYC(origFile)
+	wyc, err := info.ParseWYC(origFile)
 	assert.Nil(t, err)
 
 	// TODO create a function to do this, we'll need to do this after an update
@@ -72,18 +74,19 @@ func TestWYC_UpdateWYC(t *testing.T) {
 
 	new, err := UpdateWYC(wyc, origFile)
 	assert.Nil(t, err)
-	fmt.Println(new)
+	// fmt.Println(new)
 
-	_, err = ParseWYC(new)
+	_, err = info.ParseWYC(new)
 	assert.Nil(t, err)
 }
 
 func TestWYC_WriteIUC(t *testing.T) {
+	info := Info{}
 	// create a new uiclient.iuc and compare it to the one in the archive
 
 	origClientWYC := "../test_files/client.1.0.0.wyc"
 
-	wyc, err := ParseWYC(origClientWYC)
+	wyc, err := info.ParseWYC(origClientWYC)
 	assert.Nil(t, err)
 
 	tmpIUC, err := ioutil.TempFile("", "example")

@@ -89,12 +89,13 @@ func fixupTestURL(uri string, testURL string) string {
 // Test functions
 
 func TestFunctional_CompareVersions(t *testing.T) {
+	info := Info{}
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
 	argv := []string{"-urlargs=12345:67890"}
 	args := ParseArgs(argv)
 
-	wys, err := ParseWYS(wysFile, args)
+	wys, err := info.ParseWYS(wysFile, args)
 	assert.Nil(t, err)
 
 	rc := CompareVersions("0.1.2.3", wys.VersionToUpdate)
@@ -102,6 +103,7 @@ func TestFunctional_CompareVersions(t *testing.T) {
 }
 
 func TestFunctional_SameVersion(t *testing.T) {
+	info := Info{}
 	wycFile := "../test_files/client.1.0.1.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 
@@ -121,7 +123,7 @@ func TestFunctional_SameVersion(t *testing.T) {
 	argv := []string{fmt.Sprintf(`-cdata="%s"`, wycFile)}
 	args := ParseArgs(argv)
 
-	iuc, err := ParseWYC(wycFile)
+	iuc, err := info.ParseWYC(wycFile)
 	assert.Nil(t, err)
 
 	uri := fixupTestURL(string(iuc.IucServerFileSite[0].Value), tsWYS.URL)
@@ -130,7 +132,7 @@ func TestFunctional_SameVersion(t *testing.T) {
 	err = DownloadFile(uri, fp)
 	assert.Nil(t, err)
 
-	wys, err := ParseWYS(fp, args)
+	wys, err := info.ParseWYS(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -140,6 +142,7 @@ func TestFunctional_SameVersion(t *testing.T) {
 }
 
 func TestFunctional_URLArgs(t *testing.T) {
+	info := Info{}
 	wycFile := "../test_files/client.1.0.0.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -172,7 +175,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
 	args := ParseArgs(argv)
 
-	iuc, err := ParseWYC(wycFile)
+	iuc, err := info.ParseWYC(wycFile)
 	assert.Nil(t, err)
 
 	urls := GetWYSURLs(iuc, args)
@@ -184,7 +187,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 
-	wys, err := ParseWYS(fp, args)
+	wys, err := info.ParseWYS(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))
@@ -201,6 +204,7 @@ func TestFunctional_URLArgs(t *testing.T) {
 }
 
 func TestFunctional_UpdateWithRollback(t *testing.T) {
+	info := Info{}
 	wycFile := "../test_files/client.1.0.0.wyc"
 	wysFile := "../test_files/widgetX.1.0.1.wys"
 	wyuFile := "../test_files/widgetX.1.0.1.wyu"
@@ -231,7 +235,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	argv := []string{fmt.Sprintf("-urlargs=%s", auth)}
 	args := ParseArgs(argv)
 
-	iuc, err := ParseWYC(wycFile)
+	iuc, err := info.ParseWYC(wycFile)
 	assert.Nil(t, err)
 
 	// fixup URL adding port from test server
@@ -241,7 +245,7 @@ func TestFunctional_UpdateWithRollback(t *testing.T) {
 	err = DownloadFile(turi, fp)
 	assert.Nil(t, err)
 
-	wys, err := ParseWYS(fp, args)
+	wys, err := info.ParseWYS(fp, args)
 	assert.Nil(t, err)
 
 	// fmt.Println("installed ", string(iuc.IucInstalledVersion.Value))

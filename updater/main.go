@@ -22,10 +22,11 @@ const (
 
 func Handler() int {
 	args := ParseArgs(os.Args)
+	info := Info{}
 
 	// check for updates
 	if args.Quickcheck && args.Justcheck {
-		rc, err := IsUpdateAvailable(args)
+		rc, err := IsUpdateAvailable(info, args)
 		if nil != err {
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
@@ -35,7 +36,7 @@ func Handler() int {
 
 	// update
 	if args.Fromservice {
-		rc, err := UpdateHandler((args))
+		rc, err := UpdateHandler(info, (args))
 		if nil != err {
 			LogErrorMsg(args, err.Error())
 			LogOutputInfoMsg(args, err.Error())
@@ -46,13 +47,13 @@ func Handler() int {
 	return EXIT_ERROR
 }
 
-func UpdateHandler(args Args) (int, error) {
+func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	tmpDir := findTempDir()
 	instDir := GetExeDir()
 	defer os.RemoveAll(tmpDir)
 
 	// parse the WYC file for get update site, installed version, etc.
-	iuc, err := ParseWYC(args.Cdata)
+	iuc, err := infoer.ParseWYC(args.Cdata)
 	if nil != err {
 		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
 		return EXIT_ERROR, err
@@ -68,7 +69,7 @@ func UpdateHandler(args Args) (int, error) {
 	}
 
 	// parse the WYS file (contains the version number of the update and the link to the update)
-	wys, err := ParseWYS(fp, args)
+	wys, err := infoer.ParseWYS(fp, args)
 	if nil != err {
 		err = fmt.Errorf("error reading wys file (%s); %w", fp, err)
 		return EXIT_ERROR, err
@@ -86,28 +87,31 @@ func UpdateHandler(args Args) (int, error) {
 		return EXIT_ERROR, err
 	}
 
-	// TODO
-	// - if a PublicKey was specified in the WYC, we need to validate the WYU file
-	// if PublicKey was specified and there is no signed hash (ConfigWYS.FileSha1) we need to fail
+	if iuc.IucPublicKey.Value != nil {
+		if len(wys.FileSha1) == 0 {
+			err = fmt.Errorf("error validating WYU file; PublicKey was specified but there was no signed hash")
+			return EXIT_ERROR, err
+		}
 
-	// convert the public key from the WYC file to an rsa.PublicKey
-	key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
-	var rsa rsa.PublicKey
-	rsa.N = key.Modulus
-	rsa.E = key.Exponent
+		// convert the public key from the WYC file to an rsa.PublicKey
+		key, err := ParsePublicKey(string(iuc.IucPublicKey.Value))
+		var rsa rsa.PublicKey
+		rsa.N = key.Modulus
+		rsa.E = key.Exponent
 
-	// hash the downloaded WYU file
-	sha1hash, err := Sha1Hash(fp)
-	if nil != err {
-		err = fmt.Errorf("error hashing %s; %w", fp, err)
-		return EXIT_ERROR, err
-	}
+		// hash the downloaded WYU file
+		sha1hash, err := Sha1Hash(fp)
+		if nil != err {
+			err = fmt.Errorf("error hashing %s; %w", fp, err)
+			return EXIT_ERROR, err
+		}
 
-	// verify the signature of the WYU file (the signed hash is included in the WYS file)
-	err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
-	if nil != err {
-		err = fmt.Errorf("error verifying %s; %w", fp, err)
-		return EXIT_ERROR, err
+		// verify the signature of the WYU file (the signed hash is included in the WYS file)
+		err = VerifyHash(&rsa, sha1hash, wys.FileSha1)
+		if nil != err {
+			err = fmt.Errorf("error verifying %s; %w", fp, err)
+			return EXIT_ERROR, err
+		}
 	}
 
 	// adler32 checksum
@@ -150,9 +154,9 @@ func UpdateHandler(args Args) (int, error) {
 	}
 }
 
-func IsUpdateAvailable(args Args) (int, error) {
+func IsUpdateAvailable(infoer Infoer, args Args) (int, error) {
 	// read WYC
-	iuc, err := ParseWYC(args.Cdata)
+	iuc, err := infoer.ParseWYC(args.Cdata)
 	if nil != err {
 		err = fmt.Errorf("error reading %s; %w", args.Cdata, err)
 		return EXIT_ERROR, err
@@ -171,7 +175,7 @@ func IsUpdateAvailable(args Args) (int, error) {
 		return EXIT_ERROR, err
 	}
 
-	wys, err := ParseWYS(wysTmpFile, args)
+	wys, err := infoer.ParseWYS(wysTmpFile, args)
 	if nil != err {
 		err = fmt.Errorf("error reading %s; %w", wysTmpFile, err)
 		return EXIT_ERROR, err

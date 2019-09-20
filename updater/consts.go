@@ -8,3 +8,10 @@ const (
 	UPDTDETAILS_UDT    = "updtdetails.udt" // inside .wyu archive
 	UPDTDETAILS_HEADER = "IUUDFV2"
 )
+
+type Infoer interface {
+	ParseWYS(string, Args) (ConfigWYS, error)
+	ParseWYC(string) (ConfigIUC, error)
+}
+
+type Info struct{}

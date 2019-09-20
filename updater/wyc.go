@@ -149,7 +149,7 @@ func GetWYSURLs(config ConfigIUC, args Args) (urls []string) {
 	return urls
 }
 
-func ParseWYC(compressedWYC string) (ConfigIUC, error) {
+func (wycInfo Info) ParseWYC(compressedWYC string) (ConfigIUC, error) {
 	var config ConfigIUC
 
 	zipr, err := zip.OpenReader(compressedWYC)
