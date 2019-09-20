@@ -62,19 +62,6 @@ func IntValueToBytes(tlv *TLV) []byte {
 	return tlv.Value
 }
 
-// type TLVer interface {
-// 	String() string
-// 	Int() int
-// }
-
-// func (tlv *TLV) Int() int {
-// 	return int(binary.LittleEndian.Uint32(tlv.Value))
-// }
-
-// func (tlv *TLV) String() string {
-// 	return string(tlv.Value)
-// }
-
 func WriteTLV(f *os.File, tlv TLV) (err error) {
 	if tlv.Length == 0 {
 		// this tag is not needed

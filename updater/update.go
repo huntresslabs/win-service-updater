@@ -58,9 +58,6 @@ func CompareVersions(a string, b string) int {
 	aNum := convertVerToNum(a)
 	bNum := convertVerToNum(b)
 
-	// fmt.Printf("a = %s (%d)\n", a, aNum)
-	// fmt.Printf("b = %s (%d)\n", b, bNum)
-
 	if aNum < bNum {
 		return A_LESS_THAN_B
 	}
@@ -77,8 +74,7 @@ func GetUpdateDetails(extractedFiles []string) (udt ConfigUDT, updates []string,
 	udtFound := false
 
 	for _, f := range extractedFiles {
-		// TODO use a const for "updtdetails.udt"
-		if filepath.Base(f) == "updtdetails.udt" {
+		if filepath.Base(f) == UPDTDETAILS_UDT {
 			udt, err = ParseUDT(f)
 			if err != nil {
 				return ConfigUDT{}, updates, err
@@ -110,8 +106,6 @@ func BackupFiles(updates []string, srcDir string) (backupDir string, err error) 
 	for _, f := range updates {
 		orig := path.Join(srcDir, filepath.Base(f))
 		back := path.Join(backupDir, filepath.Base(f))
-		// fmt.Println("orig", orig)
-		// fmt.Println("back", back)
 		_, err = CopyFile(orig, back)
 		if nil != err {
 			return "", err
@@ -156,7 +150,6 @@ func InstallUpdate(udt ConfigUDT, srcFiles []string, installDir string) error {
 	}
 
 	for _, f := range srcFiles {
-		// fmt.Printf("Moving %s\n", f)
 		err := MoveFile(f, installDir)
 		if err != nil {
 			return err

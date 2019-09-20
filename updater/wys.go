@@ -73,7 +73,6 @@ func ReadWysTLV(r io.Reader) *TLV {
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
-		// fmt.Println("\n[!] error reading TLV tag:", err.Error())
 		return nil
 	}
 
@@ -94,20 +93,15 @@ func ReadWysTLV(r io.Reader) *TLV {
 		DSTRING_WYS_VERSION_TO_UPDATE:
 		err = binary.Read(r, binary.LittleEndian, &record.DataLength)
 		if err != nil {
-			// fmt.Println("\n[!] error reading TLV data length:", err.Error())
 			return nil
 		}
-		// fmt.Println("[+] value data length: ", record.DataLength)
 	default:
-		// fmt.Println("[!] unknown tag", record.Tag)
 	}
 
 	err = binary.Read(r, binary.LittleEndian, &record.Length)
 	if err != nil {
-		// fmt.Println("\n[!] error reading TLV length:", err.Error())
 		return nil
 	}
-	// fmt.Printf("[+] %s (%x) value length: %d\n", WysTags[record.Tag], record.Tag, record.Length)
 
 	// there is no value for the dummy var
 	if record.Tag == INT_WYS_DUMMY_VAR_LEN {
@@ -117,12 +111,9 @@ func ReadWysTLV(r io.Reader) *TLV {
 	record.Value = make([]byte, record.Length)
 	_, err = io.ReadFull(r, record.Value)
 	if err != nil {
-		// fmt.Println("[!] error reading TLV value:", err.Error())
 		return nil
 	}
 
-	// fmt.Println("[+] ----- read TLV record")
-	// fmt.Printf("[#] %s (len: %d) - %+v\n", WysTags[record.Tag], record.Length, record)
 	return &record
 }
 
@@ -144,8 +135,13 @@ func ParseWYS(compressedWysFile string, args Args) (wys ConfigWYS, err error) {
 			defer fh.Close()
 
 			// read HEADER
-			b := make([]byte, 7)
-			fh.Read(b)
+			header := make([]byte, 7)
+			fh.Read(header)
+
+			if string(header) != WYS_HEADER {
+				err = fmt.Errorf("invalid wys header")
+				return wys, err
+			}
 
 			for {
 				tlv := ReadWysTLV(fh)

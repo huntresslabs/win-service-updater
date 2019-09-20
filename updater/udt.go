@@ -24,7 +24,7 @@ var UdtTags = map[uint8]string{
 	INT_UDT_NUMBER_OF_FILE_INFOS:             "INT_UDT_NUMBER_OF_FILE_INFOS", // (precedes file info list)
 	STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE: "STRING_UDT_SERVICE_TO_STOP_BEFORE_UPDATE",
 	STRING_UDT_SERVICE_TO_START_AFTER_UPDATE: "STRING_UDT_SERVICE_TO_START_AFTER_UPDATE",
-	END_UDT: "END_UDT",
+	END_UDT:                                  "END_UDT",
 }
 
 type ConfigUDT struct {
@@ -41,7 +41,6 @@ func ReadUdtTLV(r io.Reader) *TLV {
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
-		// fmt.Println("\n[!] error reading TLV tag:", err.Error())
 		return nil
 	}
 
@@ -53,19 +52,15 @@ func ReadUdtTLV(r io.Reader) *TLV {
 
 	err = binary.Read(r, binary.LittleEndian, &record.Length)
 	if err != nil {
-		// fmt.Println("\n[!] error reading TLV length:", err.Error())
 		return nil
 	}
-	// fmt.Println("[+] value length: ", record.Length)
 
 	record.Value = make([]byte, record.Length)
 	_, err = io.ReadFull(r, record.Value)
 	if err != nil {
-		// fmt.Println("[!] error reading TLV value:", err.Error())
 		return nil
 	}
 
-	// fmt.Println("[+] read TLV record")
 	return &record
 }
 
@@ -79,10 +74,10 @@ func ParseUDT(path string) (ConfigUDT, error) {
 	defer f.Close()
 
 	// read HEADER
-	b := make([]byte, 7)
-	f.Read(b)
+	header := make([]byte, 7)
+	f.Read(header)
 
-	if string(b) != "IUUDFV2" {
+	if string(header) != UPDTDETAILS_HEADER {
 		err := fmt.Errorf("invalid update details file")
 		return udt, err
 	}
@@ -119,7 +114,7 @@ func WriteUDT(udt ConfigUDT, path string) error {
 	defer f.Close()
 
 	// write HEADER
-	f.Write([]byte("IUUDFV2"))
+	f.Write([]byte(UPDTDETAILS_HEADER))
 
 	// INT_UDT_NUMBER_OF_REGISTRY_CHANGES
 	WriteTLV(f, udt.NumberOfRegistryChanges)
