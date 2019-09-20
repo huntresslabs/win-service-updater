@@ -146,8 +146,16 @@ func UpdateHandler(infoer Infoer, args Args) (int, error) {
 	err = InstallUpdate(udt, updates, instDir)
 	if nil != err {
 		err = fmt.Errorf("error applying update; %w", err)
-		// TODO start services after the rollback
 		RollbackFiles(backupDir, instDir)
+		// start services
+		for _, s := range udt.ServiceToStartAfterUpdate {
+			svc := ValueToString(&s)
+			e := StartService(svc)
+			if nil != e {
+				e := fmt.Errorf("failed to start %s; %w", svc, e)
+				return 0, e
+			}
+		}
 		return EXIT_ERROR, err
 	} else {
 		return EXIT_SUCCESS, nil
