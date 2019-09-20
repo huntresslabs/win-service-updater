@@ -18,10 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func init() {
-	TRUE_IF_GO_TEST = true
-}
-
 func Sha256Hash(filePath string) (string, error) {
 	//Initialize variable returnMD5String now in case an error has to be returned
 	var sum string

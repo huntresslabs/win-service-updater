@@ -85,11 +85,8 @@ func ReadIUCTLV(r io.Reader) *TLV {
 	if err == io.EOF {
 		return nil
 	} else if err != nil {
-		// fmt.Println("\n[!] error reading TLV tag:", err.Error())
 		return nil
 	}
-
-	// fmt.Printf("- %s (%x)\n", IUCTags[record.Tag], record.Tag)
 
 	if record.Tag == END_IUC {
 		return nil
@@ -171,10 +168,10 @@ func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 			defer fh.Close()
 
 			// read HEADER
-			b := make([]byte, 7)
-			fh.Read(b)
+			header := make([]byte, 7)
+			fh.Read(header)
 
-			if string(b) != "IUCDFV2" {
+			if string(header) != IUC_HEADER {
 				err := fmt.Errorf("invalid iuclient.iuc file")
 				return config, err
 			}
@@ -248,7 +245,6 @@ func ParseWYC(compressedWYC string) (ConfigIUC, error) {
 }
 
 func WriteIUC(config ConfigIUC, path string) error {
-	fmt.Printf("Writing IUC %s\n", path)
 	f, err := os.Create(path)
 	if nil != err {
 		return err
@@ -256,7 +252,7 @@ func WriteIUC(config ConfigIUC, path string) error {
 	defer f.Close()
 
 	// write HEADER
-	f.Write([]byte("IUCDFV2"))
+	f.Write([]byte(IUC_HEADER))
 
 	// DSTRING_IUC_COMPANY_NAME:
 	WriteTLV(f, config.IucCompanyName)
@@ -318,20 +314,11 @@ func WriteIUC(config ConfigIUC, path string) error {
 		return err
 	}
 
-	// added because the test files created with python have
-	// 0x00 appended
-	// for i := 0; i < 3; i++ {
-	// 	err = binary.Write(f, binary.BigEndian, byte(0x00))
-	// 	if nil != err {
-	// 		return err
-	// 	}
-	// }
-
 	return nil
 }
 
 func UpdateWYC(config ConfigIUC, path string) (new string, err error) {
-	// Unzip the archive. We'll create an iuclient.iuc, but we need the
+	// Unzip the archive. We'll create a new iuclient.iuc, but we need the
 	// other files.
 	tmpDir := findTempDir()
 	_, files, err := Unzip(path, tmpDir)
@@ -340,8 +327,7 @@ func UpdateWYC(config ConfigIUC, path string) (new string, err error) {
 	}
 
 	for _, f := range files {
-		// TODO use a const for "iuclient.iuc"
-		if filepath.Base(f) == "iuclient.iuc" {
+		if filepath.Base(f) == IUCLIENT_IUC {
 			// overwrite this file with new IUC
 			err := WriteIUC(config, f)
 			if nil != err {
@@ -350,8 +336,7 @@ func UpdateWYC(config ConfigIUC, path string) (new string, err error) {
 		}
 	}
 
-	// TODO use a const for "client.wyc"
-	new = filepath.Join(tmpDir, "client.wyc")
+	new = filepath.Join(tmpDir, CLIENT_WYC)
 	err = CreateWYCArchive(new, files)
 	if nil != err {
 		return "", err

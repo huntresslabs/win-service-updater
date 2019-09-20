@@ -67,8 +67,6 @@ func StartService(serviceName string) error {
 
 // StopService stops a service
 func StopService(serviceName string) error {
-	// logger.Debug(fmt.Sprintf("Stopping the '%s' service", serviceName))
-
 	// open service manager, requires admin
 	m, err := mgr.Connect()
 	if nil != err {

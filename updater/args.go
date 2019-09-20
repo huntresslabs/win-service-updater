@@ -41,7 +41,7 @@ func ParseArgs(argsSlice []string) (args Args) {
 	// TODO return error
 
 	// default to client.wyc
-	args.Cdata = filepath.Join(GetExeDir(), "client.wyc")
+	args.Cdata = filepath.Join(GetExeDir(), CLIENT_WYC)
 
 	for _, arg := range argsSlice {
 		larg := strings.ToLower(arg)
