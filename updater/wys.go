@@ -192,5 +192,20 @@ func (wysInfo Info) ParseWYS(compressedWysFile string, args Args) (wys ConfigWYS
 	// wys not parsed
 	err = fmt.Errorf("wys not parsed")
 	return wys, err
+}
 
+// GetWYUURLs returns the UpdateFileSite(s) included in the WYS file.
+func GetWYUURLs(wys ConfigWYS, args Args) (urls []string) {
+	// This can only be specified in tests
+	if len(args.WYUTestServer) > 0 {
+		urls = append(urls, args.WYUTestServer)
+		return urls
+	}
+
+	// replace %urlargs% with the args specified on the command line
+	for _, s := range wys.UpdateFileSite {
+		u := strings.Replace(s, "%urlargs%", args.Urlargs, 1)
+		urls = append(urls, u)
+	}
+	return urls
 }
