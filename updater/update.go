@@ -50,26 +50,6 @@ func fileExists(filename string) bool {
 	return false
 }
 
-// CompareVersions compares two versions and returns an integer that indicates
-// their relationship in the sort order.
-// Return a negative number if versionA is less than versionB, 0 if they're
-// equal, a positive number if versionA is greater than versionB.
-func CompareVersions(a string, b string) int {
-	aNum := convertVerToNum(a)
-	bNum := convertVerToNum(b)
-
-	if aNum < bNum {
-		return A_LESS_THAN_B
-	}
-	if aNum > bNum {
-		return A_GREATER_THAN_B
-	}
-	//if aNum == bNum {
-	// return 0
-	//}
-	return A_EQUAL_TO_B
-}
-
 // GetUpdateDetails finds the updtdetails.udt in a list of files extracted
 // from a wyu archive. It returns a `ConfigUDT` and a list of the files to
 // update.
